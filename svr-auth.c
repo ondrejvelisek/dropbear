@@ -141,7 +141,16 @@ void recv_msg_userauth_request() {
 			goto out;
 		}
 	}
-	
+
+#if DROPBEAR_SVR_OAUTH2_AUTH
+    if (methodlen == AUTH_METHOD_OAUTH2_LEN &&
+        strncmp(methodname, AUTH_METHOD_OAUTH2,
+                AUTH_METHOD_OAUTH2_LEN) == 0) {
+        svr_auth_oauth2(valid_user);
+        goto out;
+    }
+#endif
+
 #if DROPBEAR_SVR_PASSWORD_AUTH
 	if (!svr_opts.noauthpass &&
 			!(svr_opts.norootpass && ses.authstate.pw_uid == 0) ) {

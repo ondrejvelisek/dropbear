@@ -192,6 +192,19 @@ group1 in Dropbear server too */
 /* ~/.ssh/authorized_keys authentication */
 #define DROPBEAR_SVR_PUBKEY_AUTH 1
 
+/* if you enable OAuth2 auth all it will become only way to authenticate */
+#define DROPBEAR_SVR_OAUTH2_AUTH 0
+#define DROPBEAR_SVR_OAUTH2_ISSUER NULL
+#define DROPBEAR_SVR_OAUTH2_AUTHORIZATION_ENDPOINT NULL
+#define DROPBEAR_SVR_OAUTH2_TOKEN_ENDPOINT NULL
+#define DROPBEAR_SVR_OAUTH2_TOKEN_INTROSPECTION_ENDPOINT NULL
+#define DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED "openid" // Comma delimited
+#define DROPBEAR_SVR_OAUTH2_CODE_CHALLENGE_METHODS_SUPPORTED "" // Comma delimited
+#define DROPBEAR_SVR_OAUTH2_CLIENT_ID NULL
+#define DROPBEAR_SVR_OAUTH2_CLIENT_SECRET NULL // Not real secret in case of native app
+#define DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PORT 22080
+#define DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PATH "/oauth2_callback"
+
 /* Whether to take public key options in 
  * authorized_keys file into account */
 #define DROPBEAR_SVR_PUBKEY_OPTIONS 1
@@ -199,6 +212,9 @@ group1 in Dropbear server too */
 /* Client authentication options */
 #define DROPBEAR_CLI_PASSWORD_AUTH 1
 #define DROPBEAR_CLI_PUBKEY_AUTH 1
+
+/* if you enable OAuth2 auth all it will become only way to authenticate */
+#define DROPBEAR_CLI_OAUTH2_AUTH 0
 
 /* A default argument for dbclient -i <privatekey>. 
 Homedir is prepended unless path begins with / */

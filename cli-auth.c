@@ -124,6 +124,7 @@ void recv_msg_userauth_banner() {
  * all have a value of 60. These are
  * SSH_MSG_USERAUTH_PASSWD_CHANGEREQ,
  * SSH_MSG_USERAUTH_PK_OK, &
+ * SSH_MSG_USERAUTH_OAUTH2_CONFIG, &
  * SSH_MSG_USERAUTH_INFO_REQUEST. */
 void recv_msg_userauth_specific_60() {
 
@@ -132,6 +133,13 @@ void recv_msg_userauth_specific_60() {
 		recv_msg_userauth_pk_ok();
 		return;
 	}
+#endif
+
+#if DROPBEAR_CLI_OAUTH2_AUTH
+	if (cli_ses.lastauthtype == AUTH_TYPE_OAUTH2) {
+        recv_msg_userauth_oauth2_config();
+        return;
+    }
 #endif
 
 #if DROPBEAR_CLI_INTERACT_AUTH
@@ -284,13 +292,21 @@ int cli_auth_try() {
 	TRACE(("enter cli_auth_try"))
 
 	CHECKCLEARTOWRITE();
-	
-	/* Order to try is pubkey, interactive, password.
+
+	/* Order to try is pubkey, oauth2, interactive, password.
 	 * As soon as "finished" is set for one, we don't do any more. */
 #if DROPBEAR_CLI_PUBKEY_AUTH
 	if (ses.authstate.authtypes & AUTH_TYPE_PUBKEY) {
 		finished = cli_auth_pubkey();
 		cli_ses.lastauthtype = AUTH_TYPE_PUBKEY;
+	}
+#endif
+
+#if DROPBEAR_CLI_OAUTH2_AUTH
+	if (!finished) {
+		cli_auth_oauth2();
+		finished = 1;
+		cli_ses.lastauthtype = AUTH_TYPE_OAUTH2;
 	}
 #endif
 

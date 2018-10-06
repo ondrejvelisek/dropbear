@@ -50,6 +50,8 @@
 
 #define SSH_MSG_USERAUTH_PK_OK				60
 
+#define SSH_MSG_USERAUTH_OAUTH2_CONFIG   60
+
 /* keyboard interactive auth */
 #define SSH_MSG_USERAUTH_INFO_REQUEST           60
 #define SSH_MSG_USERAUTH_INFO_RESPONSE          61
