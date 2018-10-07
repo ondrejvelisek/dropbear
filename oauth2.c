@@ -8,6 +8,7 @@
 #include "http-front.h"
 
 #define REDIRECT_URI_AUTHORITY "http://127.0.0.1"
+#define STORED_TOKEN_LOCATION "/tmp/access_token"
 
 ///////  UTILS  ///////
 
@@ -105,6 +106,11 @@ int rand_string(char* str, int size) {
     return 0;
 }
 
+short file_exists(char* filename){
+    struct stat buffer;
+    return (stat(filename, &buffer) == 0);
+}
+
 ///////  MAIN API  ///////
 
 int get_access_token(char* access_token, char* refresh_token, oauth2_config* oauth2_config) {
@@ -195,6 +201,10 @@ int refresh_access_token(char* access_token, char* refresh_token, oauth2_config*
 
 short is_valid_access_token_stored(oauth2_config* oauth2_config) {
     TRACE(("Checking if valid access token is stored"))
+    if (!file_exists(STORED_TOKEN_LOCATION)) {
+        TRACE(("Token file does not exists at location %s", STORED_TOKEN_LOCATION))
+        return 0;
+    }
     char access_token[1000];
     if (obtain_stored_access_token(access_token, NULL) < 0) {
         dropbear_log(LOG_ERR, "Error obtaining stored access token");
@@ -210,6 +220,10 @@ short is_valid_access_token_stored(oauth2_config* oauth2_config) {
 
 short is_valid_refresh_token_stored(oauth2_config* oauth2_config) {
     TRACE(("Checking if valid refresh token is stored"))
+    if (!file_exists(STORED_TOKEN_LOCATION)) {
+        TRACE(("Token file does not exists at location %s", STORED_TOKEN_LOCATION))
+        return 0;
+    }
     char refresh_token[1000];
     if (obtain_stored_access_token(NULL, refresh_token) < 0) {
         dropbear_log(LOG_ERR, "Error obtaining stored refresh token");
@@ -327,9 +341,9 @@ short is_refresh_token_valid(char* refresh_token, oauth2_config* oauth2_config) 
 
 int store_access_token(char* access_token, char* refresh_token) {
     TRACE(("Storing tokens"))
-    char* file_path = "/tmp/access_token";
+    char* file_path = STORED_TOKEN_LOCATION;
     FILE *file;
-    if ((file = fopen("/tmp/access_token", "w")) == NULL) {
+    if ((file = fopen(STORED_TOKEN_LOCATION, "w")) == NULL) {
         dropbear_log(LOG_ERR, "Error while opening file %s", file_path);
         return -1;
     }
@@ -345,7 +359,7 @@ int store_access_token(char* access_token, char* refresh_token) {
 
 int obtain_stored_access_token(char* access_token, char* refresh_token) {
     TRACE(("Obtaining stored tokens"))
-    char* file_path = "/tmp/access_token";
+    char* file_path = STORED_TOKEN_LOCATION;
     FILE *file;
     if ((file = fopen(file_path, "r")) == NULL) {
         dropbear_log(LOG_ERR, "Error while opening file %s", file_path);
