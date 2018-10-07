@@ -7,7 +7,7 @@ This readme is intended o be simpler and more specific version of
 if you want to use Dropbear with **OAuth2 authentication**.
 
 ## Server instalation
-[Tested on Ubuntu 18/16/14, Debian 9]
+[Tested on Ubuntu 18/16/14, Debian 9, CentOS 7]
 
 Will install `dropbear` and `dropbearkey` binaries from sources to `/usr/sbin/` resp. `/usr/bin/`.
 It will generate host key to be used by `dropbear` server. And swap `dropbear` instead of `sshd`.
@@ -23,6 +23,10 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 1.  **Install dependencies**
 	```
 	sudo apt-get install build-essential git vim autoconf zlib1g-dev libcurl4-openssl-dev
+	```
+	*CentOS:*
+	```
+	sudo yum install make gcc git vim autoconf zlib-devel libcurl-devel
 	```
 2.  **Download sources** to `/tmp/`
 	```
@@ -82,6 +86,12 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	sudo dropbear || \
 	sudo service ssh start
 	```
+	*CentOS:*
+	```
+	sudo service sshd stop && \
+	sudo dropbear || \
+	sudo service sshd start
+	```
 	(If you didn't follow our recommendation and swap ssh servers via ssh connection you could be disconnected. 
 	In such case connect to the machine again)
 
@@ -119,6 +129,10 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 1.  **Install dependencies**
 	```
 	sudo apt-get install build-essential git vim autoconf zlib1g-dev libcurl4-openssl-dev
+	```
+	*CentOS:*
+	```
+	sudo yum install make gcc git vim autoconf zlib-devel libcurl-devel
 	```
 2.  **Download sources** to `/tmp/`
 	```
