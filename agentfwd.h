@@ -38,6 +38,7 @@
 #define MAX_AGENT_REPLY  10000
 
 /* client functions */
+int cli_oauth2_get_access_token(char* config, char* access_token);
 void cli_load_agent_keys(m_list * ret_list);
 void agent_buf_sign(buffer *sigblob, sign_key *key, 
 	const buffer *data_buf);

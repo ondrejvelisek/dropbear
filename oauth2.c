@@ -157,12 +157,21 @@ int get_access_token(char* access_token, char* refresh_token, oauth2_config* oau
 int refresh_access_token(char* access_token, char* refresh_token, oauth2_config* oauth2_config) {
     TRACE(("Refreshing access token"))
     json_value* response;
+
+    // client secret is optional
+    char client_secret_param[1000] = "";
+    if (strlen(oauth2_config->client_secret) > 0) {
+        sprintf(client_secret_param, "client_secret=%s&",
+                oauth2_config->client_secret
+        );
+    }
+
     char body[10000];
-    sprintf(body, "grant_type=%s&refresh_token=%s&client_id=%s&client_secret=%s",
+    sprintf(body, "grant_type=%s&refresh_token=%s&client_id=%s&%s",
             "refresh_token",
             refresh_token,
             oauth2_config->client_id,
-            oauth2_config->client_secret
+            client_secret_param
     );
     if (make_http_request(oauth2_config->token_endpoint, body, &response, json_parser) < 0) {
         dropbear_log(LOG_ERR, "Error making refresh token request");
@@ -294,15 +303,24 @@ short is_access_token_valid(char* access_token, oauth2_config* oauth2_config) {
 short is_refresh_token_valid(char* refresh_token, oauth2_config* oauth2_config) {
     TRACE(("Checking if refresh token is valid"))
     json_value* response;
+
+    // client secret is optional
+    char client_secret_param[1000] = "";
+    if (strlen(oauth2_config->client_secret) > 0) {
+        sprintf(client_secret_param, "client_secret=%s&",
+                oauth2_config->client_secret
+        );
+    }
+
     char body[10000];
-    sprintf(body, "grant_type=%s&refresh_token=%s&client_id=%s&client_secret=%s",
+    sprintf(body, "grant_type=%s&refresh_token=%s&client_id=%s&%s",
             "refresh_token",
             refresh_token,
             oauth2_config->client_id,
-            oauth2_config->client_secret
+            client_secret_param
     );
     if (make_http_request(oauth2_config->token_endpoint, body, &response, json_parser) < 0) {
-        dropbear_log(LOG_ERR, "Error while making refresh toknen validation request");
+        dropbear_log(LOG_ERR, "Error while making refresh token validation request");
         return 0;
     }
     if (response == NULL) {
@@ -422,13 +440,21 @@ int obtain_new_access_token(char* access_token, char* refresh_token, oauth2_conf
 int exchange_code_for_access_token(char* code, char* code_verifier, char* access_token, char* refresh_token, oauth2_config* oauth2_config) {
     TRACE(("Exchanging code for token"))
 
+    // client secret is optional
+    char client_secret_param[1000] = "";
+    if (strlen(oauth2_config->client_secret) > 0) {
+        sprintf(client_secret_param, "client_secret=%s&",
+                oauth2_config->client_secret
+        );
+    }
+
     json_value* response;
     char body[10000];
-    sprintf(body, "grant_type=%s&code=%s&client_id=%s&client_secret=%s&redirect_uri=%s:%d%s&code_verifier=%s",
+    sprintf(body, "grant_type=%s&code=%s&client_id=%s&%sredirect_uri=%s:%d%s&code_verifier=%s",
             "authorization_code",
             code,
             oauth2_config->client_id,
-            oauth2_config->client_secret,
+            client_secret_param,
             REDIRECT_URI_AUTHORITY,
             oauth2_config->redirect_uri_port,
             oauth2_config->redirect_uri_path,

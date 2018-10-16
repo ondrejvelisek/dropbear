@@ -154,7 +154,7 @@ static buffer * agent_request(unsigned char type, const buffer *data) {
 		TRACE(("agent reply is too big"));
 		goto out;
 	}
-	
+
 	inbuf = buf_resize(inbuf, readlen);
 	buf_setpos(inbuf, 0);
 	ret = atomicio(read, fd, buf_getwriteptr(inbuf, readlen), readlen);
@@ -171,6 +171,57 @@ out:
 
 	return inbuf;
 }
+
+
+int cli_oauth2_get_access_token(char* config, char* access_token) {
+	TRACE(("cli_oauth2_get_access_token start"))
+
+	if (cli_opts.agent_fd < 0) {
+		cli_opts.agent_fd = connect_agent();
+	}
+	if (cli_opts.agent_fd < 0) {
+		dropbear_log(LOG_ERR, "Was not able to connect to agent socket");
+		return -1;
+	}
+	TRACE(("Connected to agent socket"))
+
+    buffer* inbuf = NULL;
+	// TODO: send oauth2 config
+    inbuf = agent_request(SSH2_AGENTC_OAUTH2_ACCESS_TOKEN_REQUEST, NULL);
+    if (!inbuf) {
+		dropbear_log(LOG_ERR, "agent_request failed returning identities");
+        return -1;
+    }
+	TRACE(("Agent request sent. receiving response"))
+
+    /* The reply has a format of:
+        byte			SSH2_AGENT_OAUTH2_ACCESS_TOKEN_RESPONSE
+        string			access_token
+     */
+    unsigned char packet_type;
+    packet_type = buf_getbyte(inbuf);
+    if (packet_type != SSH2_AGENT_OAUTH2_ACCESS_TOKEN_RESPONSE) {
+		dropbear_log(LOG_ERR, "Unknown response type received (%d)", packet_type);
+    	return -1;
+    }
+	TRACE(("Agent response type received. Receiving token."))
+
+    char* token;
+    int token_len;
+
+    token = buf_getstring(inbuf, &token_len);
+
+    strncpy(access_token, token, token_len);
+	TRACE(("Token received"))
+
+    m_free(token);
+    buf_free(inbuf);
+    inbuf = NULL;
+
+	TRACE(("cli_oauth2_get_access_token leave"))
+	return 0;
+}
+
 
 static void agent_get_key_list(m_list * ret_list)
 {
@@ -234,7 +285,7 @@ void cli_setup_agent(const struct Channel *channel) {
 	if (!getenv("SSH_AUTH_SOCK")) {
 		return;
 	}
-	
+
 	start_send_channel_request(channel, "auth-agent-req@openssh.com");
 	/* Don't want replies */
 	buf_putbyte(ses.writepayload, 0);
@@ -268,21 +319,21 @@ void agent_buf_sign(buffer *sigblob, sign_key *key,
 	*/
 	request_data = buf_new(MAX_PUBKEY_SIZE + data_buf->len + 12);
 	buf_put_pub_key(request_data, key, key->type);
-	
+
 	buf_putbufstring(request_data, data_buf);
 	buf_putint(request_data, 0);
-	
+
 	response = agent_request(SSH2_AGENTC_SIGN_REQUEST, request_data);
-	
+
 	if (!response) {
 		goto fail;
 	}
-	
+
 	packet_type = buf_getbyte(response);
 	if (packet_type != SSH2_AGENT_SIGN_RESPONSE) {
 		goto fail;
 	}
-	
+
 	/* Response format
 	byte			SSH2_AGENT_SIGN_RESPONSE
 	string			signature_blob
@@ -290,7 +341,7 @@ void agent_buf_sign(buffer *sigblob, sign_key *key,
 	siglen = buf_getint(response);
 	buf_putbytes(sigblob, buf_getptr(response, siglen), siglen);
 	goto cleanup;
-	
+
 fail:
 	/* XXX don't fail badly here. instead propagate a failure code back up to
 	   the cli auth pubkey code, and just remove this key from the list of 

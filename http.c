@@ -59,7 +59,7 @@ int make_http_request(char* url, char* body, void* result, int(*parser)(char*, v
                 TRACE(("Parsing message"));
                 if (parser(response, result, error_message) < 0) {
                     dropbear_log(LOG_ERR, "HTTP parser was not able to parse response\n"
-                                          "Parser error message: %s \nResponse string: s%\n",
+                                          "Parser error message: %s \nResponse string: %s\n",
                                  error_message, response);
                     curl_easy_cleanup(curl);
                     curl_global_cleanup();

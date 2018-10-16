@@ -9,7 +9,7 @@
 # dbclient functionality, and includes the progress-bar functionality in scp.
 
 ifndef PROGRAMS
-	PROGRAMS=dropbear dbclient dropbearkey dropbearconvert
+	PROGRAMS=dropbear oauth2agent dbclient dropbearkey dropbearconvert
 endif
 
 STATIC_LTC=libtomcrypt/libtomcrypt.a
@@ -37,8 +37,7 @@ COMMONOBJS=dbutil.o buffer.o dbhelpers.o \
 		atomicio.o compat.o fake-rfc2553.o \
 		ltc_prng.o ecc.o ecdsa.o crypto_desc.o \
 		dbmalloc.o \
-		gensignkey.o gendss.o genrsa.o \
-		oauth2.o http.o json.o http-front.o
+		gensignkey.o gendss.o genrsa.o
 
 SVROBJS=svr-kex.o svr-auth.o sshpty.o \
 		svr-authpasswd.o svr-authpubkey.o svr-authpubkeyoptions.o svr-session.o svr-service.o \
@@ -50,10 +49,13 @@ CLIOBJS=cli-main.o cli-auth.o cli-authpasswd.o cli-kex.o \
 		cli-authpubkey.o cli-tcpfwd.o cli-channel.o cli-authinteract.o \
 		cli-agentfwd.o cli-authoauth2.o
 
+OAUTH2AGENTOBJS=oauth2agent-main.o
+
 CLISVROBJS=common-session.o packet.o common-algo.o common-kex.o \
 			common-channel.o common-chansession.o termcodes.o loginrec.o \
 			tcp-accept.o listener.o process-packet.o dh_groups.o \
-			common-runopts.o circbuffer.o curve25519-donna.o list.o netio.o
+			common-runopts.o circbuffer.o curve25519-donna.o list.o netio.o \
+			oauth2.o http.o json.o http-front.o
 
 KEYOBJS=dropbearkey.o
 
@@ -75,6 +77,7 @@ ifeq (@DROPBEAR_FUZZ@, 1)
 	CXX=@CXX@
 else
 	dropbearobjs=$(COMMONOBJS) $(CLISVROBJS) $(SVROBJS)
+	oauth2agentobjs=$(COMMONOBJS) $(CLISVROBJS) $(OAUTH2AGENTOBJS)
 	dbclientobjs=$(COMMONOBJS) $(CLISVROBJS) $(CLIOBJS)
 	dropbearkeyobjs=$(COMMONOBJS) $(KEYOBJS)
 	dropbearconvertobjs=$(COMMONOBJS) $(CONVERTOBJS)
@@ -187,11 +190,15 @@ inst_dropbearmulti: $(addprefix insmulti, $(PROGRAMS))
 
 # for some reason the rule further down doesn't like $($@objs) as a prereq.
 dropbear: $(dropbearobjs)
+oauth2agent: $(oauth2agentobjs)
 dbclient: $(dbclientobjs)
 dropbearkey: $(dropbearkeyobjs)
 dropbearconvert: $(dropbearconvertobjs)
 
 dropbear: $(HEADERS) $(LIBTOM_DEPS) Makefile
+	$(CC) $(LDFLAGS) -o $@$(EXEEXT) $($@objs) $(LIBTOM_LIBS) $(LIBS) @CRYPTLIB@
+
+oauth2agent: $(HEADERS) $(LIBTOM_DEPS) Makefile
 	$(CC) $(LDFLAGS) -o $@$(EXEEXT) $($@objs) $(LIBTOM_LIBS) $(LIBS) @CRYPTLIB@
 
 dbclient: $(HEADERS) $(LIBTOM_DEPS) Makefile

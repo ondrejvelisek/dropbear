@@ -139,7 +139,13 @@ void recv_msg_userauth_oauth2_config() {
 
     char access_token[1000];
     char refresh_token[1000];
-    get_access_token(access_token, refresh_token, &oauth2_config);
+    if (cli_oauth2_get_access_token(oauth2_config.issuer, access_token) < 0) {
+        dropbear_log(LOG_INFO, "Unable to connect to agent socket, trying to get token regularly");
+        if (get_access_token(access_token, refresh_token, &oauth2_config) < 0) {
+            dropbear_exit("Getting Access token failed");
+            return;
+        }
+    }
 
     TRACE(("access token got"))
     TRACE(("sending access token"))
