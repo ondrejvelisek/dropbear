@@ -197,13 +197,13 @@ group1 in Dropbear server too */
 #define DROPBEAR_SVR_OAUTH2_ISSUER ""
 #define DROPBEAR_SVR_OAUTH2_AUTHORIZATION_ENDPOINT ""
 #define DROPBEAR_SVR_OAUTH2_TOKEN_ENDPOINT ""
-#define DROPBEAR_SVR_OAUTH2_TOKEN_INTROSPECTION_ENDPOINT ""
-#define DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED "openid" // Space delimited
-#define DROPBEAR_SVR_OAUTH2_CODE_CHALLENGE_METHODS_SUPPORTED "" // Space delimited
+#define DROPBEAR_SVR_OAUTH2_USERINFO_ENDPOINT ""
+#define DROPBEAR_SVR_OAUTH2_SUPPORTED_CODE_CHALLENGE_METHODS "" // Space delimited
 #define DROPBEAR_SVR_OAUTH2_CLIENT_ID ""
 #define DROPBEAR_SVR_OAUTH2_CLIENT_SECRET "" // Not real secret for native app, pass empty string if not needed
 #define DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PORT 22080
 #define DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PATH "/oauth2_callback"
+#define DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED "openid" // Space delimited
 
 /* Whether to take public key options in 
  * authorized_keys file into account */

@@ -136,6 +136,7 @@ int get_current_window_id(int* current_window_id) {
         dropbear_log(LOG_ERR, "Command not found or exited with error status");
         return -1;
     }
+    output[strlen(output)-1] = '\0';
 
     TRACE(("current window id got: %s", output))
     TRACE(("parsing window id string to int"))

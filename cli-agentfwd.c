@@ -172,57 +172,6 @@ out:
 	return inbuf;
 }
 
-
-int cli_oauth2_get_access_token(char* config, char* access_token) {
-	TRACE(("cli_oauth2_get_access_token start"))
-
-	if (cli_opts.agent_fd < 0) {
-		cli_opts.agent_fd = connect_agent();
-	}
-	if (cli_opts.agent_fd < 0) {
-		dropbear_log(LOG_ERR, "Was not able to connect to agent socket");
-		return -1;
-	}
-	TRACE(("Connected to agent socket"))
-
-    buffer* inbuf = NULL;
-	// TODO: send oauth2 config
-    inbuf = agent_request(SSH2_AGENTC_OAUTH2_ACCESS_TOKEN_REQUEST, NULL);
-    if (!inbuf) {
-		dropbear_log(LOG_ERR, "agent_request failed returning identities");
-        return -1;
-    }
-	TRACE(("Agent request sent. receiving response"))
-
-    /* The reply has a format of:
-        byte			SSH2_AGENT_OAUTH2_ACCESS_TOKEN_RESPONSE
-        string			access_token
-     */
-    unsigned char packet_type;
-    packet_type = buf_getbyte(inbuf);
-    if (packet_type != SSH2_AGENT_OAUTH2_ACCESS_TOKEN_RESPONSE) {
-		dropbear_log(LOG_ERR, "Unknown response type received (%d)", packet_type);
-    	return -1;
-    }
-	TRACE(("Agent response type received. Receiving token."))
-
-    char* token;
-    int token_len;
-
-    token = buf_getstring(inbuf, &token_len);
-
-    strncpy(access_token, token, token_len);
-	TRACE(("Token received"))
-
-    m_free(token);
-    buf_free(inbuf);
-    inbuf = NULL;
-
-	TRACE(("cli_oauth2_get_access_token leave"))
-	return 0;
-}
-
-
 static void agent_get_key_list(m_list * ret_list)
 {
 	buffer * inbuf = NULL;

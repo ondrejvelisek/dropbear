@@ -9,7 +9,7 @@
 
 int json_parser(char* response, json_value** result, char* error_message);
 
-int make_http_request(char* url, char* body, void* result, int(*parser)(char*, void*, char*));
+int make_http_request(char* url, char* authorization, char* body, void* result, int(*parser)(char*, void*, char*));
 
 #endif
 

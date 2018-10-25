@@ -9,67 +9,50 @@
 #include "dbutil.h"
 #include "auth.h"
 #include "runopts.h"
-#include "oauth2.h"
+#include "oauth2-utils.h"
+#include "oauth2-native.h"
 
-void send_oauth2_config(oauth2_config* oauth2_config) {
+void send_oauth2_config(oauth2_config* config) {
 
     CHECKCLEARTOWRITE();
 
     buf_putbyte(ses.writepayload, SSH_MSG_USERAUTH_OAUTH2_CONFIG);
-
-    buf_putbyte(ses.writepayload, oauth2_config->version);
-
-    buf_putstring(ses.writepayload, oauth2_config->issuer, strlen(oauth2_config->issuer));
-
-    buf_putstring(ses.writepayload, oauth2_config->authorization_endpoint, strlen(oauth2_config->authorization_endpoint));
-
-    buf_putstring(ses.writepayload, oauth2_config->token_endpoint, strlen(oauth2_config->token_endpoint));
-
-    buf_putstring(ses.writepayload, oauth2_config->token_introspection_endpoint, strlen(oauth2_config->token_introspection_endpoint));
-
-    buf_putstring(ses.writepayload, oauth2_config->scopes_required, strlen(oauth2_config->scopes_required));
-
-    buf_putstring(ses.writepayload, oauth2_config->code_challenge_methods_supported, strlen(oauth2_config->code_challenge_methods_supported));
-
-    buf_putstring(ses.writepayload, oauth2_config->client_id, strlen(oauth2_config->client_id));
-
-    buf_putstring(ses.writepayload, oauth2_config->client_secret, strlen(oauth2_config->client_secret));
-
-    buf_putint(ses.writepayload, oauth2_config->redirect_uri_port);
-
-    buf_putstring(ses.writepayload, oauth2_config->redirect_uri_path, strlen(oauth2_config->redirect_uri_path));
-
+    buf_put_oauth2_config(ses.writepayload, config);
     encrypt_packet();
 }
 
-void receive_access_token(oauth2_config* oauth2_config) {
+void receive_access_token(oauth2_config* config) {
 
-    char* access_token = NULL;
-    unsigned int access_token_len;
-    char* refresh_token = NULL;
-    unsigned int refresh_token_len;
+    oauth2_token token;
+    buf_get_oauth2_token(ses.payload, &token);
 
-    access_token = buf_getstring(ses.payload, &access_token_len);
-    refresh_token = buf_getstring(ses.payload, &refresh_token_len);
+    dropbear_log(LOG_WARNING,
+                 "Token received:: '%s'\n '%s'\n '%d' \n '%s' \n '%s'",
+                 token.access_token, token.refresh_token, token.expires_at, token.scopes);
 
-    if (is_access_token_valid(access_token, oauth2_config)) {
-        store_access_token(access_token, refresh_token);
-    } else {
+    if (!is_token_valid(&token, config)) {
         dropbear_log(LOG_WARNING,
                      "Invalid access token attempt. User: '%s'",
                      ses.authstate.pw_name);
-        m_burn(access_token, access_token_len);
-        m_free(access_token);
-        m_burn(refresh_token, refresh_token_len);
-        m_free(refresh_token);
+        m_burn(token.access_token, strlen(token.access_token));
+        m_burn(token.refresh_token, strlen(token.refresh_token));
         send_msg_userauth_failure(0, 1);
         return;
     }
 
-    m_burn(access_token, access_token_len);
-    m_free(access_token);
-    m_burn(refresh_token, refresh_token_len);
-    m_free(refresh_token);
+    oauth2_userinfo userinfo;
+    if (get_userinfo(&userinfo, token.access_token, config->issuer.userinfo_endpoint) < 0) {
+        m_burn(token.access_token, strlen(token.access_token));
+        m_burn(token.refresh_token, strlen(token.refresh_token));
+        send_msg_userauth_failure(0, 1);
+        return;
+    }
+
+    // TODO check user mapping
+    printf("User %s with id %s\n", userinfo.name, userinfo.sub);
+
+    m_burn(token.access_token, strlen(token.access_token));
+    m_burn(token.refresh_token, strlen(token.refresh_token));
 
     send_msg_userauth_success();
 
@@ -88,30 +71,32 @@ void svr_auth_oauth2(int valid_user) {
                  ses.authstate.pw_name,
                  svr_ses.addrstring);
 
-    /* reserved to be able to adjust flow */
-    unsigned char type = buf_getbyte(ses.payload);
-
-    oauth2_config oauth2_config = {
+    oauth2_config config = {
             .version = 1,
-            .issuer = DROPBEAR_SVR_OAUTH2_ISSUER,
-            .authorization_endpoint = DROPBEAR_SVR_OAUTH2_AUTHORIZATION_ENDPOINT,
-            .token_endpoint = DROPBEAR_SVR_OAUTH2_TOKEN_ENDPOINT,
-            .token_introspection_endpoint = DROPBEAR_SVR_OAUTH2_TOKEN_INTROSPECTION_ENDPOINT,
-            .scopes_required =  DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED,
-            .code_challenge_methods_supported = DROPBEAR_SVR_OAUTH2_CODE_CHALLENGE_METHODS_SUPPORTED,
-            .client_id = DROPBEAR_SVR_OAUTH2_CLIENT_ID,
-            .client_secret = DROPBEAR_SVR_OAUTH2_CLIENT_SECRET,
-            .redirect_uri_port = DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PORT,
-            .redirect_uri_path = DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PATH
+            .issuer = {
+                    .issuer = DROPBEAR_SVR_OAUTH2_ISSUER,
+                    .authorization_endpoint = DROPBEAR_SVR_OAUTH2_AUTHORIZATION_ENDPOINT,
+                    .token_endpoint = DROPBEAR_SVR_OAUTH2_TOKEN_ENDPOINT,
+                    .userinfo_endpoint = DROPBEAR_SVR_OAUTH2_USERINFO_ENDPOINT,
+                    .supported_code_challenge_methods = DROPBEAR_SVR_OAUTH2_SUPPORTED_CODE_CHALLENGE_METHODS
+            },
+            .client = {
+                    .client_id = DROPBEAR_SVR_OAUTH2_CLIENT_ID,
+                    .client_secret = DROPBEAR_SVR_OAUTH2_CLIENT_SECRET,
+                    .redirect_uri_port = DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PORT,
+                    .redirect_uri_path = DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PATH
+            },
+            .required_scopes = DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED
     };
 
+    char type = buf_getbyte(ses.payload);
     if (type == 0) {
         // OAuth2 config request
-        send_oauth2_config(&oauth2_config);
+        send_oauth2_config(&config);
 
     } else if (type == 1) {
         // OAuth2 access token request
-        receive_access_token(&oauth2_config);
+        receive_access_token(&config);
 
     } else {
 

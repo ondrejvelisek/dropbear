@@ -9,6 +9,8 @@
 /config.log
 /config.status
 /dbclient
+/oauth2agent
+/userinfo
 /dropbear
 /dropbearconvert
 /dropbearkey

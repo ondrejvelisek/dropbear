@@ -24,7 +24,7 @@ int json_parser(char* response, json_value** result, char* error_message) {
     }
 }
 
-int make_http_request(char* url, char* body, void* result, int(*parser)(char*, void*, char*)) {
+int make_http_request(char* url, char* authorization, char* body, void* result, int(*parser)(char*, void*, char*)) {
 
     CURL *curl;
     CURLcode res;
@@ -33,17 +33,27 @@ int make_http_request(char* url, char* body, void* result, int(*parser)(char*, v
 
     curl = curl_easy_init();
     if(curl) {
+        struct curl_slist* headers = NULL;
+        if (authorization != NULL) {
+            char authorization_header[10000];
+            sprintf(authorization_header, "Authorization: %s", authorization);
+            headers = curl_slist_append(headers, authorization_header);
+        }
+
         char response[MAX_STR_SIZE] = "";
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, mem_writer);
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
 
         if (body != NULL) {
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
         }
 
-        TRACE(("Sendng request %s %s", url, body));
+        TRACE(("Sending request"));
         res = curl_easy_perform(curl);
+
+        curl_slist_free_all(headers);
 
         /* Check for errors */
         if(res != CURLE_OK) {
@@ -53,7 +63,7 @@ int make_http_request(char* url, char* body, void* result, int(*parser)(char*, v
             curl_global_cleanup();
             return -1;
         } else {
-            TRACE(("Response successfully received %s", response));
+            TRACE(("Response successfully received"));
             if (parser != NULL) {
                 char error_message[MAX_STR_SIZE];
                 TRACE(("Parsing message"));
