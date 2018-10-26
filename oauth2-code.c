@@ -129,7 +129,7 @@ int request_handler(char* request, char* response, state* state) {
 
 int make_auth_uri(char* auth_uri, char* oauth2_state, char* code_challenge, oauth2_config* config) {
 
-    if (!str_set_contains(config->issuer.supported_code_challenge_methods, "plain")) {
+    if (!str_set_contains(config->issuer.supported_code_challenge_methods, "plain", NULL)) {
         dropbear_log(LOG_ERR, "Server does not support PKCE 'plain' method. Aborting.");
         return -1;
     }

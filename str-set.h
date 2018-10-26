@@ -7,7 +7,7 @@
 
 int str_set_replace_delimiter(char* replaced, char* set, char* delimiter);
 
-short str_set_contains(char* set, char* value);
+short str_set_contains(char* set, char* value, char delimiter);
 
 short str_set_is_subset(char* subset, char* set);
 

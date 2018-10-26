@@ -96,9 +96,10 @@ int str_set_replace_delimiter(char* replaced, char* set, char* delimiter) {
     str_set_join(replaced, array, delimiter);
 }
 
-short str_set_contains(char* set, char* value) {
+short str_set_contains(char* set, char* value, char delimiter) {
+    if (delimiter == NULL) delimiter = DELIMITER;
     char array[MAX_ARRAY_LEN][MAX_VALUE_LEN];
-    str_set_split(array, set, DELIMITER);
+    str_set_split(array, set, delimiter);
     return str_array_contains(array, value);
 }
 

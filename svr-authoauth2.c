@@ -11,6 +11,7 @@
 #include "runopts.h"
 #include "oauth2-utils.h"
 #include "oauth2-native.h"
+#include "oauth2-authorization.h"
 
 void send_oauth2_config(oauth2_config* config) {
 
@@ -26,10 +27,6 @@ void receive_access_token(oauth2_config* config) {
     oauth2_token token;
     buf_get_oauth2_token(ses.payload, &token);
 
-    dropbear_log(LOG_WARNING,
-                 "Token received:: '%s'\n '%s'\n '%d' \n '%s' \n '%s'",
-                 token.access_token, token.refresh_token, token.expires_at, token.scopes);
-
     if (!is_token_valid(&token, config)) {
         dropbear_log(LOG_WARNING,
                      "Invalid access token attempt. User: '%s'",
@@ -42,17 +39,24 @@ void receive_access_token(oauth2_config* config) {
 
     oauth2_userinfo userinfo;
     if (get_userinfo(&userinfo, token.access_token, config->issuer.userinfo_endpoint) < 0) {
+        dropbear_log(LOG_WARNING,
+                     "Invalid access token attempt. User: '%s'",
+                     ses.authstate.pw_name);
         m_burn(token.access_token, strlen(token.access_token));
         m_burn(token.refresh_token, strlen(token.refresh_token));
         send_msg_userauth_failure(0, 1);
         return;
     }
-
-    // TODO check user mapping
-    printf("User %s with id %s\n", userinfo.name, userinfo.sub);
-
     m_burn(token.access_token, strlen(token.access_token));
     m_burn(token.refresh_token, strlen(token.refresh_token));
+
+    if (!is_authorized(ses.authstate.pw_name, userinfo.sub)) {
+        dropbear_log(LOG_WARNING,
+                     "User %s (%s) is not authorized to access account %s",
+                     userinfo.name, userinfo.sub, ses.authstate.pw_name);
+        send_msg_userauth_failure(0, 1);
+        return;
+    }
 
     send_msg_userauth_success();
 
