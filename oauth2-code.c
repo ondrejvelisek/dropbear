@@ -44,7 +44,7 @@ int exchange_code_for_token(oauth2_token* token, char* code, char* code_verifier
         dropbear_log(LOG_ERR, "No response received");
         return -1;
     }
-    if (parse_token_response(token, response) < 0) {
+    if (parse_token_response(token, response, NULL) < 0) {
         dropbear_log(LOG_ERR, "Error while parsing token response");
         json_value_free(response);
         return -1;
@@ -85,7 +85,7 @@ int handle_authorization_code_request(char* request, char* response, state* stat
         char* query_key = strtok_r(query_param, "=", &query_param_parse_state);
         char* query_value = strtok_r(NULL, "=", &query_param_parse_state);
 
-        if (strstr(query_key, "error") != NULL) {
+        if (strcmp(query_key, "error") == 0) {
             dropbear_log(LOG_ERR, "Authorization code response contains error: %s", query_value);
             return -1;
         } else if (strcmp(query_key, "code") == 0) {

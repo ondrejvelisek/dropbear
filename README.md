@@ -5,9 +5,16 @@
 This readme is intended o be simpler and more specific version of 
 [Original Dropbear README](README)
 if you want to use Dropbear with **OAuth2 authentication**.
+It also adds instructions for OAuth2 specific programs like `oauth2agent` and `userinfo`
+
+programs:
+ - `dropbear` ssh server
+ - `dbclient` ssh client
+ - `oauth2agent` listening on unix socket and handling incoming OAuth2 requests e.g. from `dbclient` or `userinfo`
+ - `userinfo` Simple example program using oauth2agent
 
 ## Server instalation
-[Tested on Ubuntu 18/16/14, Debian 9, CentOS 7]
+[Tested on Ubuntu 18/16/14, Debian 9, CentOS 7, macOS 10.14]
 
 Will install `dropbear` and `dropbearkey` binaries from sources to `/usr/sbin/` resp. `/usr/bin/`.
 It will generate host key to be used by `dropbear` server. And swap `dropbear` instead of `sshd`.
@@ -28,6 +35,7 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	```
 	sudo yum install make gcc git vim autoconf zlib-devel libcurl-devel
 	```
+	*macOS:* Install `xcode` and `cctools`
 2.  **Download sources** to `/tmp/`
 	```
 	cd /tmp/ && \
@@ -96,11 +104,11 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	In such case connect to the machine again)
 
 #### Next possible steps
-1.  **Check connection**  
+1.  **Check connection**
 	Since host key has been changed you need to remove it from known hosts
 	```
 	sudo ssh-keygen -R <hostname>
-	ssh <username>@<hostname>
+	dbclient <username>@<hostname>
 	```
 2.  **Check dropbear** server has replaced `sshd`
 	```
@@ -117,7 +125,7 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 
 
 ## Client instalation
-[Tested on Ubuntu 18/16/14, Debian 9]
+[Tested on Ubuntu 18/16/14, Debian 9, macOS 10.14]
 
 Will install `dbclient` binary from sources to `/usr/bin/`.
 Then Dropbear client will be ready to connect to Dropbear server and authenticate via OAuth2.
@@ -134,6 +142,7 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	```
 	sudo yum install make gcc git vim autoconf zlib-devel libcurl-devel
 	```
+	*macOS:* Install `xcode` and `cctools`
 2.  **Download sources** to `/tmp/`
 	```
 	cd /tmp/ && \
@@ -178,3 +187,106 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
     ```
     rm -rf /tmp/dropbear/
     ```
+    
+    
+## OAuth2 Agent instalation
+[Tested on Ubuntu 18/16/14, Debian 9, CentOS 7, macOS 10.14]
+
+Will install `oauth2agent` to `/usr/sbin/` and run it.
+Then Agent will be ready to accept incoming connections and authenticate via OAuth2.
+
+NOTE: Tested under `root`. So somewhere you will have to use `sudo`
+
+#### Instalation steps
+
+1.  **Install dependencies**
+	```
+	sudo apt-get install build-essential git vim autoconf libcurl4-openssl-dev
+	```
+	*CentOS:*
+	```
+	sudo yum install make gcc git vim autoconf libcurl-devel
+	```
+	*macOS:* Install `xcode` and `cctools`
+2.  **Download sources** to `/tmp/`
+	```
+	cd /tmp/ && \
+	git clone https://github.com/ondrejvelisek/dropbear.git && \
+	cd /tmp/dropbear/ && \
+	git checkout oauth2-auth-support
+	```
+3.  **Build and install** agent
+	```
+	autoconf && \
+	autoheader && \
+	./configure --disable-zlib --without-zlib
+	sudo CFLAGS=-std=gnu99 make oauth2agent && \
+	sudo cp oauth2agent /usr/sbin/ && \
+	cd ~
+	```
+4.  **Run** agent
+	```
+	oauth2agent
+	```
+
+#### Next possible steps
+1.  **Check daemon** is running 
+	```
+	ps -aux | grep oauth2agent
+	```
+	You should see `oauth2agent` at the end of line
+2.  **Check functionality**  
+	See installation steps for `userinfo` example program
+	```
+	userinfo
+	```
+	It should authenticate you and print your name
+	See `/var/log/oauth2agent.log`
+3.  **Integrate oauth2agent** to system to survive machine reboot  
+	[**TBD**]
+    
+    
+## Userinfo example program instalation
+[Tested on Ubuntu 18/16/14, Debian 9, CentOS 7, macOS 10.14]
+
+Will install `userinfo` to `/usr/bin/`.
+Then Userinfo program will be ready to connect to OAuth2 Agent and authenticate via OAuth2.
+
+NOTE: Tested under `root`. So somewhere you will have to use `sudo`
+
+#### Instalation steps
+
+1.  **Install dependencies**
+	```
+	sudo apt-get install build-essential git vim autoconf libcurl4-openssl-dev
+	```
+	*CentOS:*
+	```
+	sudo yum install make gcc git vim autoconf libcurl-devel
+	```
+	*macOS:* Install `xcode` and `cctools`
+2.  **Download sources** to `/tmp/`
+	```
+	cd /tmp/ && \
+	git clone https://github.com/ondrejvelisek/dropbear.git && \
+	cd /tmp/dropbear/ && \
+	git checkout oauth2-auth-support
+	```
+3.  **Build and install**
+	```
+	autoconf && \
+	autoheader && \
+	./configure --disable-zlib --without-zlib
+	sudo CFLAGS=-std=gnu99 make userinfo && \
+	sudo cp userinfo /usr/bin/ && \
+	cd ~
+	```
+
+#### Next possible steps
+2.  **Check functionality**
+	```
+	userinfo
+	```
+	It should authenticate you and print your name
+3.  **Integrate oauth2agent** to system to survive machine reboot  
+	[**TBD**]

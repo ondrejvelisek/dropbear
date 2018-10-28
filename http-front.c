@@ -100,7 +100,7 @@ int make_close_response(char* response, char* close_window_id) {
                   "  </body>"
                   "</html>\r\n",
             close_window_id,
-            "This page should be closed automatically. "
+            "Authentication successfull. You can close this window and go back you "
             "If not, please close it and return to application.",
             CLOSE_PATH);
     make_response(response, NULL, NULL, body);
@@ -109,9 +109,10 @@ int make_close_response(char* response, char* close_window_id) {
 
 int close_request_handler(char* response, char* close_window_id) {
     make_response(response, "204 No Content", NULL, NULL);
-    if (close_browser(close_window_id) < 0) {
-        dropbear_log(LOG_WARNING, "Error closing browser window. Need to close manually");
-    }
+    // TODO: not possible since it would close all tabs.
+//    if (close_browser(close_window_id) < 0) {
+//        dropbear_log(LOG_WARNING, "Error closing browser window. Need to close manually");
+//    }
     return 0;
 }
 
@@ -145,28 +146,44 @@ int get_current_window_id(int* current_window_id) {
     return 0;
 }
 
+int execute(char* command) {
+    char command_full[10000];
+    sprintf(command_full, "%s > /dev/null 2>&1", command);
+    TRACE(("executing: %s", command_full))
+    int ret = system(command_full);
+    if (ret == -1) {
+        return -1;
+    } else {
+        return WEXITSTATUS(ret);
+    }
+}
+
 int focus_window(int window_id) {
     TRACE(("Focusing window with id %d", window_id))
     char command[10000];
-    sprintf(command, "wmctrl -i -a %d > /dev/null", window_id);
-    TRACE(("executing: %s", command))
-    return system(command);
+    sprintf(command, "wmctrl -i -a %d", window_id);
+    return execute(command);
 }
 
 int open_browser(char* url) {
     TRACE(("Opening browser"))
     char command[10000];
-    sprintf(command, "x-www-browser -new-window \"%s\" > /dev/null", url);
-    TRACE(("executing: %s", command))
-    return system(command);
+
+    sprintf(command, "xdg-open \"%s\" > /dev/null 2>&1", url);
+    if (execute(command) == 0) return 0;
+
+    sprintf(command, "open \"%s\" > /dev/null 2>&1", url);
+    if (execute(command) == 0) return 0;
+
+    TRACE(("Unable to open browser"))
+    return -1;
 }
 
 int close_browser(char* close_window_id) {
     TRACE(("CLosing browser. Window ID: %s", close_window_id))
     char command[10000];
-    sprintf(command, "wmctrl -c %s > /dev/null", close_window_id);
-    TRACE(("executing: %s", command))
-    return system(command);
+    sprintf(command, "wmctrl -c %s", close_window_id);
+    return execute(command);
 }
 
 
@@ -210,7 +227,7 @@ typedef struct inter_state_t {
 
 int serve_connection(int connection, int(*request_handler)(char*, char*, void*), inter_state* inter_state) {
 
-    int continue_listening = 0;
+    int continue_listening = SERVING_REQUEST_CONTINUING;
     char request[MAX_STR_SIZE];
     char response[MAX_STR_SIZE];
 
@@ -226,7 +243,7 @@ int serve_connection(int connection, int(*request_handler)(char*, char*, void*),
             dropbear_log(LOG_ERR, "Handling close window response failed");
             return -1;
         }
-        continue_listening = 0;
+        continue_listening = SERVING_REQUEST_COMPLETED;
     } else {
         if ((continue_listening = request_handler(request, response, inter_state->exter_state)) < 0) {
             dropbear_log(LOG_ERR, "Handling response failed");

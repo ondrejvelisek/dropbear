@@ -21,8 +21,8 @@ void extract_buf_string(char* destination, buffer* response, char secret) {
 
 ///////////////// API ////////////////////
 
-int parse_token_response(oauth2_token *token, json_value *response) {
-    TRACE(("Parsing token repsonse"))
+int parse_token_response(oauth2_token *token, json_value *response, char* error) {
+    TRACE(("Parsing token response"))
     if (response->type != json_object) {
         dropbear_log(LOG_ERR, "Unknown JSON structure received");
         return -1;
@@ -30,8 +30,12 @@ int parse_token_response(oauth2_token *token, json_value *response) {
     for (int i = 0; i < response->u.object.length; i++) {
         char* key = response->u.object.values[i].name;
         json_value* value = response->u.object.values[i].value;
-        if (strstr(key, "error") != NULL) {
-            dropbear_log(LOG_ERR, "Error response received: %s", value->u.string.ptr);
+        if (strcmp(key, "error") == 0) {
+            if (error == NULL) {
+                dropbear_log(LOG_ERR, "Error response received: %s", value->u.string.ptr);
+            } else {
+                strcpy(error, value->u.string.ptr);
+            }
             return -1;
         }
         if (strcmp(key, "access_token") == 0) {
@@ -64,7 +68,7 @@ int parse_token_response(oauth2_token *token, json_value *response) {
     if (strlen(token->scopes) == 0) {
         TRACE(("No scope param received"))
     }
-    TRACE(("Token repsonse parsed"))
+    TRACE(("Token response parsed"))
     return 0;
 }
 

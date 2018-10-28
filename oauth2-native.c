@@ -7,6 +7,7 @@
 #include "oauth2-refresh.h"
 #include "oauth2-agent.h"
 #include "oauth2-code.h"
+#include "oauth2-device.h"
 #include "http.h"
 #include "str-set.h"
 
@@ -75,9 +76,29 @@ int obtain_token_with_code_flow(oauth2_token* token, oauth2_config* config) {
 }
 
 int obtain_token_with_device_flow(oauth2_token* token, oauth2_config* config) {
-    // TODO
-    dropbear_log(LOG_WARNING, "Device flow not implemented yet");
-    return -1;
+
+    oauth2_device device;
+    if (device_authorization_request(&device, config) < 0) {
+        return -1;
+    }
+
+    char qrcode[10000];
+    get_qrcode(qrcode, &device, config);
+    printf("%s\n", qrcode);
+    printf("Visit: %s\n", device.verification_uri);
+    printf("and enter: %s\n", device.user_code);
+    printf("or use QR Code above\n");
+
+    if (poll_for_device_token(token, &device, config) < 0) {
+        return -1;
+    }
+    TRACE(("Token got with device flow. Storing."))
+    if (store_token(token, config) < 0) {
+        dropbear_log(LOG_WARNING, "Unable to store token");
+    } else {
+        TRACE(("Token stored"))
+    }
+    return 0;
 }
 
 int parse_userinfo_response(oauth2_userinfo* userinfo, json_value* response) {
@@ -89,7 +110,7 @@ int parse_userinfo_response(oauth2_userinfo* userinfo, json_value* response) {
     for (int i = 0; i < response->u.object.length; i++) {
         char* key = response->u.object.values[i].name;
         json_value* value = response->u.object.values[i].value;
-        if (strstr(key, "error") != NULL) {
+        if (strcmp(key, "error") == 0) {
             dropbear_log(LOG_ERR, "Error response received: %s", value->u.string.ptr);
             return -1;
         }
@@ -121,7 +142,7 @@ int obtain_token_by_mode(oauth2_token* token, oauth2_config* config, char mode) 
         return obtain_token_by_refreshing_from_store(token, config);
     } else
     if (mode == 'A') {
-        return obtain_token_from_agent(token, config);
+        return obtain_token_from_agent(token, config); // TODO pass mode_sequence arg
     } else
     if (mode == 'C') {
         return obtain_token_with_code_flow(token, config);

@@ -10,6 +10,7 @@ typedef struct oauth2_issuer_t {
     char authorization_endpoint[10000];
     char token_endpoint[10000];
     char userinfo_endpoint[10000];
+    char device_endpoint[10000];
     char supported_code_challenge_methods[1000];
 } oauth2_issuer;
 
@@ -38,5 +39,14 @@ typedef struct oauth2_token_t {
     int expires_at;
     char scopes[10000];
 } oauth2_token;
+
+typedef struct oauth2_device_t {
+    char device_code[1000];
+    char user_code[100];
+    char verification_uri[10000];
+    char verification_uri_complete[10000];
+    int expires_at;
+    int interval;
+} oauth2_device;
 
 #endif

@@ -15,7 +15,7 @@ int connect_agent() {
 	char* agent_sock = NULL;
 
 	agent_sock = getenv("SSH_AUTH_SOCK");
-	if (agent_sock == NULL)
+	if (agent_sock == NULL || strlen(agent_sock) == 0)
 		return -1;
 
 	fd = connect_unix(agent_sock);
@@ -49,7 +49,12 @@ buffer* send_agent_request(char type, buffer* data) {
 	buf_setpos(payload, 0);
 
 	TRACE(("Writing agent request bytes"))
-	int socket = connect_agent();
+	int socket;
+	if ((socket = connect_agent()) < 0) {
+        buf_free(payload);
+        TRACE(("Unable to connect to socket"))
+        goto out;
+	}
 	if (atomicio(vwrite, socket, buf_getptr(payload, payload->len), payload->len) != payload->len) {
 		dropbear_log(LOG_ERR, "Write agent request failed, socket %d, %s", socket, strerror(errno));
 		buf_free(payload);
@@ -131,7 +136,11 @@ int write_agent_response(int connection, char type, buffer* data) {
 	TRACE(("write_agent_response enter"))
 
 	buffer* response_len_buf = buf_new(4);
-	buf_putint(response_len_buf, data->len + 1);
+	int data_len = 0;
+	if (data != NULL) {
+		data_len = data->len;
+	}
+	buf_putint(response_len_buf, data_len + 1);
 
     if (write(connection, response_len_buf->data, 4) < 0) {
 		dropbear_log(LOG_ERR, "Error writing agent response length");
@@ -146,6 +155,9 @@ int write_agent_response(int connection, char type, buffer* data) {
 	}
 	TRACE(("Agent response type written"))
 
+	if (data == NULL) {
+		TRACE(("No agent response data to be written"))
+	}
 	if (write(connection, data->data, data->len) < 0) {
 		dropbear_log(LOG_ERR, "Error writing agent response data");
 		return -1;

@@ -142,11 +142,18 @@ int read_record(char* client_id, oauth2_token* token, FILE* file){
 }
 
 int write_record(char* client_id, oauth2_token* token, FILE* file){
+    // TODO better handling of optional values
+    char refresh_token_opt[1000];
+    if (token->refresh_token == NULL || strlen(token->refresh_token) == 0) {
+        strcpy(refresh_token_opt, " ");
+    } else {
+        strcpy(refresh_token_opt, token->refresh_token);
+    }
     return fprintf(file, "%s;%s;%d;%s;%s\n",
                    client_id,
                    token->access_token,
                    token->expires_at,
-                   token->refresh_token,
+                   refresh_token_opt,
                    token->scopes
     );
 }

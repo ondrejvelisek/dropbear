@@ -23,9 +23,14 @@ int obtain_token_from_agent(oauth2_token* token, oauth2_config* config) {
     }
     TRACE(("Agent's access token request sent. Receiving response"))
 
-    char packet_type;
-    if ((packet_type = buf_getbyte(response)) != SSH_AGENT_EXTENSION_OAUTH2_TOKEN_RESPONSE) {
+    char packet_type = buf_getbyte(response);
+    if (packet_type == SSH_AGENT_EXTENSION_OAUTH2_TOKEN_RESPONSE_FAILURE) {
+        dropbear_log(LOG_ERR, "Failure agent response received");
+        buf_free(response);
+        return -1;
+    } else if (packet_type != SSH_AGENT_EXTENSION_OAUTH2_TOKEN_RESPONSE) {
         dropbear_log(LOG_ERR, "Unknown response type received (%x)", packet_type);
+        buf_free(response);
         return -1;
     }
     TRACE(("Agent's response type received %d. Receiving token.", packet_type))

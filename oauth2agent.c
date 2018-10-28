@@ -37,6 +37,13 @@
 #include "oauth2-utils.h"
 #include "oauth2-native.h"
 
+#include "oauth2-native.h"
+
+#define SOCK_PATH "/tmp/oauth2_sock" // TODO support multiuser environment
+#define LOG_PATH "/tmp/oauth2agent.log" // TODO better path
+
+int sock = 0;
+
 buffer* oauth2_request_handler(buffer* data) {
     TRACE(("oauth2_request_handler enter"))
 
@@ -44,7 +51,10 @@ buffer* oauth2_request_handler(buffer* data) {
     buf_get_oauth2_config(data, &config);
 
     oauth2_token token;
-    obtain_token(&token, &config, "SRCD");
+    if (obtain_token(&token, &config, "SRCD") < 0) {
+        dropbear_log(LOG_ERR, "Unable to obtain token");
+        return NULL;
+    }
 
     buffer* token_buf = buf_new(100000);
     buf_put_oauth2_token(token_buf, &token);
@@ -75,25 +85,81 @@ buffer* agent_request_handler(char request_type, buffer* request, char* response
     m_free(extension_type);
 
     buffer* response;
-    response = oauth2_request_handler(request);
-    *response_type = SSH_AGENT_EXTENSION_OAUTH2_TOKEN_RESPONSE;
+    if ((response = oauth2_request_handler(request)) == NULL) {
+        *response_type = SSH_AGENT_EXTENSION_OAUTH2_TOKEN_RESPONSE_FAILURE;
+    } else {
+        *response_type = SSH_AGENT_EXTENSION_OAUTH2_TOKEN_RESPONSE;
+    }
     TRACE(("Agent response created"))
     return response;
 }
 
-int main(int argc, char ** argv) {
-    debug_trace = 1;
+void quit_signal_handler(int signum) {
+    printf("Handling quit signal %d\n", signum);
+    unlink(SOCK_PATH);
+    close(sock);
+    exit(signum);
+}
 
-    char path[] = "/tmp/oidc_sock";
-    int sock;
-    if (agent_init_socket(path, &sock) < 0) {
+int exec(char* command) {
+    char command_full[10000];
+//    sprintf(command_full, "%s > /dev/null 2>&1", command);
+    sprintf(command_full, "%s", command);
+    TRACE(("executing: %s", command_full))
+    int ret = system(command_full);
+    if (ret == -1) {
+        return -1;
+    } else {
+        return WEXITSTATUS(ret);
+    }
+}
+
+int kill_siblings() {
+    char command[1000];
+    sprintf(command, "kill $(pgrep $(cat /proc/%d/comm) | grep -v %d)", getpid(), getpid());
+    return exec(command);
+}
+
+int daemonize() {
+
+    daemon(0, 0);
+
+    int log_fileno;
+    if ((log_fileno = fileno(fopen(LOG_PATH, "a"))) < 0) {
+        dropbear_log(LOG_ERR, "Error opening log file");
+    } else {
+        if (dup2(log_fileno, STDOUT_FILENO) < 0) {
+            dropbear_log(LOG_ERR, "Error redirecting stdout to log file");
+        }
+        if (dup2(log_fileno, STDERR_FILENO) < 0) {
+            dropbear_log(LOG_ERR, "Error redirecting stderr to log file");
+        }
+    }
+}
+
+int main(int argc, char ** argv) {
+#if DEBUG_TRACE
+    debug_trace = 1;
+#endif
+
+    printf("export SSH_AUTH_SOCK=%s\n", SOCK_PATH);
+
+    daemonize();
+
+    dropbear_log(LOG_INFO, "Starting OAuth2 agent");
+
+    if (agent_init_socket(SOCK_PATH, &sock) < 0) {
         dropbear_log(LOG_ERR, "Error while initializing socket");
         return -1;
     }
+
+    kill_siblings();
+
     agent_listen_on_socket(sock, agent_request_handler);
 
-    unlink(path);
+    unlink(SOCK_PATH);
     close(sock);
+    dropbear_log(LOG_INFO, "Quiting OAuth2 agent");
 }
 
 int agent_listen_on_socket(int sock, buffer* (*request_handler)(char, buffer*, char*)) {
@@ -121,12 +187,7 @@ int agent_listen_on_socket(int sock, buffer* (*request_handler)(char, buffer*, c
 
         char response_type;
         buffer* response_buf;
-        if ((response_buf = request_handler(request_type, request_buf, &response_type)) == NULL) {
-            dropbear_log(LOG_ERR, "Error while handling request");
-            buf_free(request_buf);
-            close(connection);
-            continue;
-        }
+        response_buf = request_handler(request_type, request_buf, &response_type);
         buf_free(request_buf);
         TRACE(("Request handled"))
 
@@ -136,7 +197,9 @@ int agent_listen_on_socket(int sock, buffer* (*request_handler)(char, buffer*, c
             close(connection);
             continue;
         }
-        buf_free(response_buf);
+        if (response_buf) {
+            buf_free(response_buf);
+        }
         TRACE(("Response written"))
     }
 }

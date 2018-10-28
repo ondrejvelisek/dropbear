@@ -36,7 +36,7 @@ int refresh_token(oauth2_token* token, char* refresh_token, oauth2_config* confi
         dropbear_log(LOG_ERR, "No response received");
         return -1;
     }
-    if (parse_token_response(token, response) < 0) {
+    if (parse_token_response(token, response, NULL) < 0) {
         dropbear_log(LOG_ERR, "Error while parsing token response");
         json_value_free(response);
         return -1;

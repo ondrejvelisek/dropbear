@@ -9,7 +9,7 @@
 #ifndef _OAUTH2_UTILS_H
 #define _OAUTH2_UTILS_H
 
-int parse_token_response(oauth2_token* token, json_value* response);
+int parse_token_response(oauth2_token* token, json_value* response, char* error);
 
 void buf_put_oauth2_config(buffer* buffer, oauth2_config* config);
 

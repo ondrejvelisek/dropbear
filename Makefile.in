@@ -42,7 +42,7 @@ COMMONOBJS=dbutil.o buffer.o dbhelpers.o \
 SVROBJS=svr-kex.o svr-auth.o sshpty.o \
 		svr-authpasswd.o svr-authpubkey.o svr-authpubkeyoptions.o svr-session.o svr-service.o \
 		svr-chansession.o svr-runopts.o svr-agentfwd.o svr-main.o svr-x11fwd.o\
-		svr-tcpfwd.o svr-authpam.o svr-authoauth2.o
+		svr-tcpfwd.o svr-authpam.o svr-authoauth2.o oauth2-authorization.o
 
 CLIOBJS=cli-main.o cli-auth.o cli-authpasswd.o cli-kex.o \
 		cli-session.o cli-runopts.o cli-chansession.o \
@@ -53,15 +53,15 @@ OAUTH2AGENTOBJS=oauth2agent-main.o
 
 OAUTH2AGENTOBJS=oauth2agent.o
 
-USERINFOOBJS=userinfo.o dbutil.o buffer.o dbhelpers.o queue.o atomicio.o dbmalloc.o compat.o \
-			oauth2-native.o oauth2-storage.o oauth2-agent.o oauth2-code.o oauth2-refresh.o oauth2-utils.o \
+USERINFOOBJS=userinfo.o dbutil.o buffer.o dbhelpers.o queue.o atomicio.o dbmalloc.o compat.o qrcodegen.o \
+			oauth2-native.o oauth2-storage.o oauth2-agent.o oauth2-code.o oauth2-refresh.o oauth2-device.o oauth2-utils.o \
 			str-set.o json.o http.o http-front.o agent-request.o
 
 CLISVROBJS=common-session.o packet.o common-algo.o common-kex.o \
 			common-channel.o common-chansession.o termcodes.o loginrec.o \
 			tcp-accept.o listener.o process-packet.o dh_groups.o \
-			common-runopts.o circbuffer.o curve25519-donna.o list.o netio.o \
-			oauth2-native.o oauth2-storage.o oauth2-agent.o oauth2-code.o oauth2-refresh.o oauth2-utils.o \
+			common-runopts.o circbuffer.o curve25519-donna.o list.o netio.o qrcodegen.o \
+			oauth2-native.o oauth2-storage.o oauth2-agent.o oauth2-code.o oauth2-refresh.o oauth2-device.o oauth2-utils.o \
 			str-set.o json.o http.o http-front.o agent-request.o
 
 KEYOBJS=dropbearkey.o
