@@ -167,6 +167,9 @@ int focus_window(int window_id) {
 
 int open_browser(char* url) {
     TRACE(("Opening browser"))
+    // check for X-window
+    if (getenv("DISPLAY") == NULL) return -1;
+
     char command[10000];
 
     sprintf(command, "xdg-open \"%s\" > /dev/null 2>&1", url);
