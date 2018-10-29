@@ -241,7 +241,7 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	userinfo
 	```
 	It should authenticate you and print your name
-	See `/var/log/oauth2agent.log`
+	See `/tmp/oauth2agent.log`
 3.  **Integrate oauth2agent** to system to survive machine reboot  
 	[**TBD**]
     

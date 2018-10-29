@@ -12,12 +12,12 @@
 //#define TOKEN_ENDPOINT "https://oauth2.googleapis.com/token"
 //#define USERINFO_ENDPOINT "https://www.googleapis.com/oauth2/v3/userinfo"
 //#define DEVICE_ENDPOINT "https://accounts.google.com/o/oauth2/device/code"
-//#define SCOPES_REQUIRED "https://www.googleapis.com/auth/plus.me https://www.googleapis.com/auth/userinfo.profile"
 //#define SUPPORTED_CODE_CHALLENGE_METHODS "plain S256"
 //#define CLIENT_ID "708451758224-o4sed0lsq43tgpqo9ghgd802iuh9jvcs.apps.googleusercontent.com"
 //#define CLIENT_SECRET "XRPq3N5OtNkbxiXipwF0E-Vr" // Not real secret in case of native app
 //#define REDIRECT_URI_PORT 22080
 //#define REDIRECT_URI_PATH "/oauth2_callback"
+//#define SCOPES_REQUIRED "https://www.googleapis.com/auth/plus.me https://www.googleapis.com/auth/userinfo.profile"
 
 // ELIXIR
 #define ISSUER "https://login.elixir-czech.org/oidc/"
@@ -26,11 +26,12 @@
 #define USERINFO_ENDPOINT "https://login.elixir-czech.org/oidc/userinfo"
 #define DEVICE_ENDPOINT "https://login.elixir-czech.org/oidc/devicecode"
 #define SUPPORTED_CODE_CHALLENGE_METHODS "plain S256"
+#define DROPBEAR_SVR_OAUTH2_CLIENT_ID "b602da80-1cae-4cc0-b315-51a98dffe740"
 #define CLIENT_ID "b602da80-1cae-4cc0-b315-51a98dffe740"
 #define CLIENT_SECRET "" // Not real secret in case of native app
 #define REDIRECT_URI_PORT 22080
 #define REDIRECT_URI_PATH "/oauth2_callback"
-#define SCOPES_REQUIRED "openid"
+#define SCOPES_REQUIRED "openid offline_access"
 
 int main(int argc, char ** argv) {
     printf("Authenticating...\n");

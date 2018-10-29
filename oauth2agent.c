@@ -145,6 +145,7 @@ int main(int argc, char ** argv) {
     printf("export SSH_AUTH_SOCK=%s\n", SOCK_PATH);
 
     daemonize();
+    kill_siblings();
 
     dropbear_log(LOG_INFO, "Starting OAuth2 agent");
 
@@ -152,8 +153,6 @@ int main(int argc, char ** argv) {
         dropbear_log(LOG_ERR, "Error while initializing socket");
         return -1;
     }
-
-    kill_siblings();
 
     agent_listen_on_socket(sock, agent_request_handler);
 
@@ -218,7 +217,7 @@ int agent_init_socket(char* path, int* sock) {
     server.sun_family = AF_UNIX;
     strcpy(server.sun_path, path);
     if (bind(*sock, (struct sockaddr *) &server, sizeof(struct sockaddr_un))) {
-        dropbear_log(LOG_ERR, "Error binding agent socket");
+        dropbear_log(LOG_ERR, "Error binding agent socket. Hint: try remove socket: %s", path);
         close(*sock);
         return -1;
     }
