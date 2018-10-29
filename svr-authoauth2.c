@@ -82,6 +82,7 @@ void svr_auth_oauth2(int valid_user) {
                     .authorization_endpoint = DROPBEAR_SVR_OAUTH2_AUTHORIZATION_ENDPOINT,
                     .token_endpoint = DROPBEAR_SVR_OAUTH2_TOKEN_ENDPOINT,
                     .userinfo_endpoint = DROPBEAR_SVR_OAUTH2_USERINFO_ENDPOINT,
+                    .device_endpoint = DROPBEAR_SVR_OAUTH2_DEVICE_ENDPOINT,
                     .supported_code_challenge_methods = DROPBEAR_SVR_OAUTH2_SUPPORTED_CODE_CHALLENGE_METHODS
             },
             .client = {

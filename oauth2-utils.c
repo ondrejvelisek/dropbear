@@ -79,6 +79,7 @@ void buf_put_oauth2_config(buffer* request, oauth2_config* config) {
     buf_putstring(request, config->issuer.authorization_endpoint, strlen(config->issuer.authorization_endpoint));
     buf_putstring(request, config->issuer.token_endpoint, strlen(config->issuer.token_endpoint));
     buf_putstring(request, config->issuer.userinfo_endpoint, strlen(config->issuer.userinfo_endpoint));
+    buf_putstring(request, config->issuer.device_endpoint, strlen(config->issuer.device_endpoint));
     buf_putstring(request, config->issuer.supported_code_challenge_methods, strlen(config->issuer.supported_code_challenge_methods));
     buf_putstring(request, config->client.client_id, strlen(config->client.client_id));
     buf_putstring(request, config->client.client_secret, strlen(config->client.client_secret));
@@ -96,6 +97,7 @@ void buf_get_oauth2_config(buffer* response, oauth2_config* config) {
     extract_buf_string(config->issuer.authorization_endpoint, response, 0);
     extract_buf_string(config->issuer.token_endpoint, response, 0);
     extract_buf_string(config->issuer.userinfo_endpoint, response, 0);
+    extract_buf_string(config->issuer.device_endpoint, response, 0);
     extract_buf_string(config->issuer.supported_code_challenge_methods, response, 0);
     extract_buf_string(config->client.client_id, response, 0);
     extract_buf_string(config->client.client_secret, response, 1);

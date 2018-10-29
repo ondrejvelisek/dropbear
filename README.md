@@ -14,7 +14,7 @@ programs:
  - `userinfo` Simple example program using oauth2agent
 
 ## Server instalation
-[Tested on Ubuntu 18/16/14, Debian 9, CentOS 7, macOS 10.14]
+[Tested on Ubuntu 18/16/14, Debian 9, CentOS 7]
 
 Will install `dropbear` and `dropbearkey` binaries from sources to `/usr/sbin/` resp. `/usr/bin/`.
 It will generate host key to be used by `dropbear` server. And swap `dropbear` instead of `sshd`.
@@ -35,7 +35,6 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	```
 	sudo yum install make gcc git vim autoconf zlib-devel libcurl-devel
 	```
-	*macOS:* Install `xcode` and `cctools`
 2.  **Download sources** to `/tmp/`
 	```
 	cd /tmp/ && \
@@ -85,7 +84,20 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	sudo mkdir /etc/dropbear && \
 	sudo dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key
 	```
-6.  **Swap servers** `sshd` for `dropbear` server  
+6.  **Authorization mapping** configuration  
+	To authorize someone you must configure authorization mapping between OAuth2 accounts and local account.
+	To do so simply create file `/home/<local_account>/.oauth2-ssh/oauth2-mappings` with one line formatted like below:
+	```
+	oauth2_account_id_1:oauth2_account_id_2:oauth2_account_id_3
+	```
+	or file `/etc/oauth2-ssh/oauth2-mappings` with following mapping format
+	```
+	local_account_1:oauth2_account_id_1:oauth2_account_id_2:oauth2_account_id_3
+	local_account_2:oauth2_account_id_1
+	local_account_3:oauth2_account_id_2:oauth2_account_id_4
+	```
+	NOTE: OAuth2 account is authorized if it is placed in at least one of those files.
+7.  **Swap servers** `sshd` for `dropbear` server  
 	CRITICAL: If your only access to machine is through `ssh` and you do this command via such connection
 	if this command fails you can **lose access to the whole machine**. Because of it we strongly recommend 
 	run following lines through different channel. e.g. ssh on *different port*, *VNC* or *desktop UI*. 
