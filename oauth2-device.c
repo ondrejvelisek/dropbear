@@ -131,7 +131,7 @@ int device_token_request(oauth2_token* token, oauth2_device* device, oauth2_conf
 
     json_value* response;
     if (make_http_request(config->issuer.token_endpoint, NULL, body, &response, json_parser) < 0) {
-        dropbear_log(LOG_ERR, "Error making refresh token request");
+        dropbear_log(LOG_ERR, "Error making device token request");
         return -1;
     }
     if (response == NULL) {
@@ -194,7 +194,11 @@ int get_qrcode(char* qrcode, oauth2_device* device, oauth2_config* config) {
 int poll_for_device_token(oauth2_token* token, oauth2_device* device, oauth2_config* config) {
     TRACE(("poll_for_device_token enter"))
 
-    while(time(NULL) < device->expires_at) {
+    long pending_till = device->expires_at;
+    if (pending_till < time(NULL)) {
+        pending_till = time(NULL) + 300;
+    }
+    while(time(NULL) < pending_till) {
         long next_time = time(NULL) + device->interval;
         int ret;
         if ((ret = device_token_request(token, device, config)) == 0) {
