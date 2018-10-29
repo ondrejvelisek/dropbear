@@ -118,7 +118,7 @@ int close_request_handler(char* response, char* close_window_id) {
 
 int get_current_window_id(int* current_window_id) {
     TRACE(("getting current window id"))
-    char command[] = "xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}'";
+    char command[] = "xprop -root _NET_ACTIVE_WINDOW | awk '{print $NF}' > /dev/null 2>&1";
 
     char output[MAX_STR_SIZE];
     FILE *fp;
