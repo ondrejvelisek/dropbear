@@ -35,8 +35,6 @@
 int main(int argc, char ** argv) {
     printf("Authenticating...\n");
 
-    debug_trace = 1;
-
     oauth2_config config = {
             .version = 1,
             .issuer = {
