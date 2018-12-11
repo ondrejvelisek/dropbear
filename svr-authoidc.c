@@ -29,8 +29,7 @@ void send_oidc_config(oauth2_config* config) {
     strcpy(code_challenge, code_verifier); // TODO should be S256
 
     buf_putbyte(ses.writepayload, SSH_MSG_USERAUTH_OIDC_CONFIG);
-    buf_put_oauth2_config(ses.writepayload, config, 1);
-    buf_putstring(ses.writepayload, code_challenge, strlen(code_challenge));
+    buf_put_oauth2_config(ses.writepayload, config, code_challenge);
     encrypt_packet();
 }
 
