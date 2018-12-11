@@ -212,11 +212,6 @@ short is_token_valid(oauth2_token* token, oauth2_config* config) {
         TRACE(("Access token have insufficient scopes"))
         return 0;
     }
-    oauth2_userinfo userinfo;
-    if (get_userinfo(&userinfo, token->access_token, config->issuer.userinfo_endpoint) < 0) {
-        TRACE(("Access token is invalid. Unable to get userinfo."))
-        return 0;
-    }
     TRACE(("Token is valid"))
     return 1;
 }
