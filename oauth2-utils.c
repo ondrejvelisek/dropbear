@@ -72,7 +72,7 @@ int parse_token_response(oauth2_token *token, json_value *response, char* error)
     return 0;
 }
 
-void buf_put_oauth2_config(buffer* request, oauth2_config* config) {
+void buf_put_oauth2_config(buffer* request, oauth2_config* config, char* code_challenge) {
     TRACE(("buf_put_oauth2_config enter"))
     buf_putbyte(request, config->version);
     buf_putstring(request, config->issuer.issuer, strlen(config->issuer.issuer));
@@ -82,14 +82,15 @@ void buf_put_oauth2_config(buffer* request, oauth2_config* config) {
     buf_putstring(request, config->issuer.device_endpoint, strlen(config->issuer.device_endpoint));
     buf_putstring(request, config->issuer.supported_code_challenge_methods, strlen(config->issuer.supported_code_challenge_methods));
     buf_putstring(request, config->client.client_id, strlen(config->client.client_id));
-    buf_putstring(request, config->client.client_secret, strlen(config->client.client_secret));
+    buf_putstring(request, "", 0); // client secret
     buf_putint(request, config->client.redirect_uri_port);
     buf_putstring(request, config->client.redirect_uri_path, strlen(config->client.redirect_uri_path));
     buf_putstring(request, config->required_scopes, strlen(config->required_scopes));
+    buf_putstring(request, code_challenge, strlen(code_challenge));
     TRACE(("OAuth2 config put to buffer"))
 }
 
-void buf_get_oauth2_config(buffer* response, oauth2_config* config) {
+void buf_get_oauth2_config(buffer* response, oauth2_config* config, char* code_challenge) {
     TRACE(("buf_get_oauth2_config enter"))
     config->version = buf_getbyte(response);
     TRACE(("OAuth2 config version extracted: %d", config->version))
@@ -105,8 +106,22 @@ void buf_get_oauth2_config(buffer* response, oauth2_config* config) {
     TRACE(("OAuth2 config redirect uri port extracted: %d", config->client.redirect_uri_port))
     extract_buf_string(config->client.redirect_uri_path, response, 0);
     extract_buf_string(config->required_scopes, response, 0);
+    extract_buf_string(code_challenge, response, 1);
     TRACE(("OAuth2 config got"))
 }
+
+void buf_put_oauth2_code(buffer* request, char* code) {
+    TRACE(("buf_put_oauth2_code enter"))
+    buf_putstring(request, code, strlen(code));
+    TRACE(("OAuth2 code put"))
+}
+
+void buf_get_oauth2_code(buffer* response, char* code) {
+    TRACE(("buf_get_oauth2_code enter"))
+    extract_buf_string(code, response, 1);
+    TRACE(("OAuth2 code got"))
+}
+
 
 void buf_put_oauth2_token(buffer* request, oauth2_token* token) {
     TRACE(("buf_put_oauth2_token enter"))

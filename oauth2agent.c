@@ -35,9 +35,7 @@
 #include "buffer.h"
 #include "agent-request.h"
 #include "oauth2-utils.h"
-#include "oauth2-native.h"
-
-#include "oauth2-native.h"
+#include "oauth2-code.h"
 
 #define SOCK_PATH "/tmp/oauth2_sock" // TODO support multiuser environment
 #define LOG_PATH "/tmp/oauth2agent.log" // TODO better path
@@ -48,19 +46,20 @@ buffer* oauth2_request_handler(buffer* data) {
     TRACE(("oauth2_request_handler enter"))
 
     oauth2_config config;
-    buf_get_oauth2_config(data, &config);
+    char code_challenge[1000];
+    buf_get_oauth2_config(data, &config, code_challenge);
 
-    oauth2_token token;
-    if (obtain_token(&token, &config, "SRCD") < 0) {
-        dropbear_log(LOG_ERR, "Unable to obtain token");
+    char code[1000];
+    if (obtain_code(code, code_challenge, &config) < 0) {
+        dropbear_log(LOG_ERR, "Unable to obtain code");
         return NULL;
     }
 
-    buffer* token_buf = buf_new(100000);
-    buf_put_oauth2_token(token_buf, &token);
-    buf_setpos(token_buf, 0);
-    TRACE(("OAuth2 agent token response created"))
-    return token_buf;
+    buffer* code_buf = buf_new(100000);
+    buf_put_oauth2_code(code_buf, code);
+    buf_setpos(code_buf, 0);
+    TRACE(("OAuth2 agent code response created"))
+    return code_buf;
 }
 
 buffer* agent_request_handler(char request_type, buffer* request, char* response_type) {
@@ -77,7 +76,7 @@ buffer* agent_request_handler(char request_type, buffer* request, char* response
 
     TRACE(("Agent extension request type received"))
 
-    if (strcmp(extension_type, SSH_AGENTC_EXTENSION_OAUTH2_TOKEN_REQUEST) != 0) {
+    if (strcmp(extension_type, SSH_AGENTC_EXTENSION_OAUTH2_CODE_REQUEST) != 0) {
         dropbear_log(LOG_WARNING, "Unknown extension type received (%s)", extension_type);
         m_free(extension_type);
         return NULL;
@@ -86,9 +85,9 @@ buffer* agent_request_handler(char request_type, buffer* request, char* response
 
     buffer* response;
     if ((response = oauth2_request_handler(request)) == NULL) {
-        *response_type = SSH_AGENT_EXTENSION_OAUTH2_TOKEN_RESPONSE_FAILURE;
+        *response_type = SSH_AGENT_EXTENSION_OAUTH2_CODE_RESPONSE_FAILURE;
     } else {
-        *response_type = SSH_AGENT_EXTENSION_OAUTH2_TOKEN_RESPONSE;
+        *response_type = SSH_AGENT_EXTENSION_OAUTH2_CODE_RESPONSE;
     }
     TRACE(("Agent response created"))
     return response;
@@ -138,13 +137,32 @@ int daemonize() {
 }
 
 int main(int argc, char ** argv) {
+
+    char verbose = 0;
+    char daemon = 0;
+
+    char opt = 0;
+    while ((opt = getopt(argc, argv, "vd")) != -1) {
+        switch (opt)
+        {
+            case 'v':
+                verbose = 1;
+                break;
+            case 'd':
+                daemon = 1;
+                break;
+        }
+    }
+
 #if DEBUG_TRACE
-    debug_trace = 1;
+    debug_trace = verbose;
 #endif
 
     printf("export SSH_AUTH_SOCK=%s\n", SOCK_PATH);
 
-    daemonize();
+    if (daemon) {
+        daemonize();
+    }
     kill_siblings();
 
     dropbear_log(LOG_INFO, "Starting OAuth2 agent");

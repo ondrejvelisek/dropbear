@@ -1,6 +1,5 @@
 
-# SSH server and client supporting OAuth2 authentication
-(OpenID Connect core included)
+# SSH server and client supporting OAuth2 resource access and OpenID Connect authentication
 
 This readme is intended o be simpler and more specific version of 
 [Original Dropbear README](README)
@@ -10,8 +9,11 @@ It also adds instructions for OAuth2 specific programs like `oauth2agent` and `u
 programs:
  - `dropbear` ssh server
  - `dbclient` ssh client
- - `oauth2agent` listening on unix socket and handling incoming OAuth2 requests e.g. from `dbclient` or `userinfo`
+ - `oauth2agent` listening on unix socket and handling incoming OAuth2 requests e.g. from `dbclient` or `userinfo`.
+    Note that it can be forwarded same way as SSH agent.
  - `userinfo` Simple example program using oauth2agent
+
+
 
 ## Server instalation
 [Tested on Ubuntu 18/16/14, Debian 9, CentOS 7]
@@ -23,7 +25,7 @@ Then Dropbear server will be ready to accept incoming connections and authentica
 IMPORTANT: Make sure you have **backdoor access** beside ssh 
 since in some point you have to kill `sshd` and run `dropbear` instead.
 e.g. `sshd` running on *different port*, *VNC* or *desktop UI*.  
-NOTE: Tested under `root`. So somewhere you will have to use `sudo`
+NOTE: Tested under `root`. So you have to use `sudo` somewhere.
 
 #### Instalation steps
 
@@ -42,7 +44,7 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	cd /tmp/dropbear/ && \
 	git checkout oauth2-auth-support
 	```
-3.  **Configure build** to support OAuth2 authentication
+3.  **Configure build**
 	```
 	autoconf && \
 	autoheader && \
@@ -54,21 +56,33 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	```
 	vim localoptions.h
 	```
+	[A] **OpenID Connect authentication** configuration
 	Example: Google identity provider
 	```
+	#define DROPBEAR_SVR_OIDC_AUTH 1
 	#define DROPBEAR_SVR_PUBKEY_AUTH 1 // Can be turned off, if you want
-	#define DROPBEAR_SVR_OAUTH2_AUTH 1
 	
-	#define DROPBEAR_SVR_OAUTH2_ISSUER "https://accounts.google.com"
-	#define DROPBEAR_SVR_OAUTH2_AUTHORIZATION_ENDPOINT "https://accounts.google.com/o/oauth2/v2/auth"
-	#define DROPBEAR_SVR_OAUTH2_TOKEN_ENDPOINT "https://oauth2.googleapis.com/token"
-	#define DROPBEAR_SVR_OAUTH2_TOKEN_INTROSPECTION_ENDPOINT "https://www.googleapis.com/oauth2/v3/tokeninfo"
-	#define DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED "https://www.googleapis.com/auth/plus.me https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"
-	#define DROPBEAR_SVR_OAUTH2_CODE_CHALLENGE_METHODS_SUPPORTED "plain S256"
-	#define DROPBEAR_SVR_OAUTH2_CLIENT_ID "<client_id>"
-	#define DROPBEAR_SVR_OAUTH2_CLIENT_SECRET "<client_secret>" // Not real secret in case of native app
-	#define DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PORT 22080
-	#define DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PATH "/oauth2_callback"
+	#define DROPBEAR_SVR_OIDC_ISSUER "https://accounts.google.com"
+	#define DROPBEAR_SVR_OIDC_AUTHORIZATION_ENDPOINT "https://accounts.google.com/o/oauth2/v2/auth"
+	#define DROPBEAR_SVR_OIDC_TOKEN_ENDPOINT "https://oauth2.googleapis.com/token"
+	#define DROPBEAR_SVR_OIDC_TOKEN_INTROSPECTION_ENDPOINT "https://www.googleapis.com/oauth2/v3/tokeninfo"
+	#define DROPBEAR_SVR_OIDC_SCOPES_REQUIRED "https://www.googleapis.com/auth/plus.me"
+	#define DROPBEAR_SVR_OIDC_CODE_CHALLENGE_METHODS_SUPPORTED "plain S256"
+	#define DROPBEAR_SVR_OIDC_CLIENT_ID "<client_id>"
+	#define DROPBEAR_SVR_OIDC_CLIENT_SECRET "<client_secret>" // Not real secret in case of native app
+	#define DROPBEAR_SVR_OIDC_REDIRECT_URI_PORT 22080
+	#define DROPBEAR_SVR_OIDC_REDIRECT_URI_PATH "/oauth2_callback"
+	```
+	[B] **OAuth2 resource access** configuration
+	Example: MitreID Connect
+	```
+	#define DROPBEAR_SVR_OAUTH2_AUTH 1
+	#define DROPBEAR_SVR_PUBKEY_AUTH 1 // Can be turned off, if you want
+
+	#define DROPBEAR_SVR_OAUTH2_INTROSPECTION_ENDPOINT "https://mitreid.org/introspect"
+	#define DROPBEAR_SVR_OAUTH2_RESOURCE_SERVER_ID "<resource_server_id>" 
+	#define DROPBEAR_SVR_OAUTH2_RESOURCE_SERVER_SECRET "<resource_server_secret>"
+	#define DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED "<required_scope>" // List of space delimited scopes required to access the server
 	```
 4.  **Build and install** server and key generator
 	```
@@ -136,6 +150,8 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	[**TBD**]
 
 
+
+
 ## Client instalation
 [Tested on Ubuntu 18/16/14, Debian 9, macOS 10.14]
 
@@ -162,7 +178,7 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	cd /tmp/dropbear/ && \
 	git checkout oauth2-auth-support
 	```
-3.  **Configure build** to support OAuth2 authentication
+3.  **Configure build**
 	```
 	autoconf && \
 	autoheader && \
@@ -178,6 +194,29 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	```
 	#define DROPBEAR_CLI_PUBKEY_AUTH 0 
 	#define DROPBEAR_CLI_OAUTH2_AUTH 1 
+	```
+	[A] **OpenID Connect authentication** configuration
+	Example: Google identity provider
+	```
+	#define DROPBEAR_CLI_OIDC_AUTH 1 
+	#define DROPBEAR_CLI_PUBKEY_AUTH 0 
+	```
+	[B] **OAuth2 resource access** configuration
+	Example: MitreID Connect
+	```
+	#define DROPBEAR_CLI_OAUTH2_AUTH 1
+	#define DROPBEAR_CLI_PUBKEY_AUTH 0 
+
+	#define DROPBEAR_CLI_OAUTH2_ISSUER "https://mitreid.org/"
+	#define DROPBEAR_CLI_OAUTH2_AUTHORIZATION_ENDPOINT "https://mitreid.org/authorize"
+	#define DROPBEAR_CLI_OAUTH2_TOKEN_ENDPOINT "https://mitreid.org/token"
+	#define DROPBEAR_CLI_OAUTH2_USERINFO_ENDPOINT "https://mitreid.org/userinfo"
+	#define DROPBEAR_CLI_OAUTH2_SUPPORTED_CODE_CHALLENGE_METHODS "plain S256" // Space delimited
+	#define DROPBEAR_CLI_OAUTH2_CLIENT_ID "<client_id>"
+	#define DROPBEAR_CLI_OAUTH2_CLIENT_SECRET "<client_secret>" // Not real secret for native public app, pass empty string if not needed
+	#define DROPBEAR_CLI_OAUTH2_REDIRECT_URI_PORT 22080
+	#define DROPBEAR_CLI_OAUTH2_REDIRECT_URI_PATH "/oauth2_callback"
+	#define DROPBEAR_CLI_OAUTH2_SCOPES_REQUIRED "<required_scope>" // Space delimited
 	```
 4.  **Build and install** client
 	```
@@ -206,6 +245,10 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 
 Will install `oauth2agent` to `/usr/sbin/` and run it.
 Then Agent will be ready to accept incoming connections and authenticate via OAuth2.
+
+It has two options. `-d` to run it in background (daemon), `-v` to run debug mode (verbose).
+In either way it kills its siblings and prints an environment variable which needs to be provided
+to SSH client.
 
 NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 
@@ -295,10 +338,8 @@ NOTE: Tested under `root`. So somewhere you will have to use `sudo`
 	```
 
 #### Next possible steps
-2.  **Check functionality**
+1.  **Check functionality**
 	```
 	userinfo
 	```
 	It should authenticate you and print your name
-3.  **Integrate oauth2agent** to system to survive machine reboot  
-	[**TBD**]

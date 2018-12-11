@@ -151,6 +151,15 @@ void recv_msg_userauth_request() {
     }
 #endif
 
+#if DROPBEAR_SVR_OIDC_AUTH
+	if (methodlen == AUTH_METHOD_OIDC_LEN &&
+        strncmp(methodname, AUTH_METHOD_OIDC,
+                AUTH_METHOD_OIDC_LEN) == 0) {
+        svr_auth_oidc(valid_user);
+        goto out;
+    }
+#endif
+
 #if DROPBEAR_SVR_PASSWORD_AUTH
 	if (!svr_opts.noauthpass &&
 			!(svr_opts.norootpass && ses.authstate.pw_uid == 0) ) {

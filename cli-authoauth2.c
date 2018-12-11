@@ -19,49 +19,45 @@ void fill_oauth2_request_header(buffer* buffer, unsigned char type) {
     buf_putbyte(buffer, type);
 }
 
-void send_oauth2_config_request() {
-    TRACE(("enter send_oauth2_config_request"))
-
-    fill_oauth2_request_header(ses.writepayload, 0); /* 0 = OAuth2 config request */
-    encrypt_packet();
-
-    TRACE(("leave send_oauth2_config_request"))
-}
-
-void send_oauth2_authentication_request(oauth2_token* token) {
+void send_oauth2_authentication_request(oauth2_config* config) {
     TRACE(("enter send_oauth2_authentication_request"))
 
+    oauth2_token token;
+    if (obtain_token(&token, config, NULL) < 0) {
+        dropbear_exit("Getting Access token failed");
+        return;
+    }
+
     fill_oauth2_request_header(ses.writepayload, 1); // 1 = OAuth2 authentication request
-    buf_put_oauth2_token(ses.writepayload, token);
+    buf_putstring(ses.writepayload, token.access_token, strlen(token.access_token));
     encrypt_packet();
 
     TRACE(("leave send_oauth2_authentication_request"))
 }
 
-void recv_msg_userauth_oauth2_config() {
-    TRACE(("enter recv_msg_userauth_oauth2_config"))
-
-    oauth2_config config;
-    buf_get_oauth2_config(ses.payload, &config);
-
-    oauth2_token token;
-    if (obtain_token(&token, &config, NULL) < 0) {
-        dropbear_exit("Getting Access token failed");
-        return;
-    }
-
-    send_oauth2_authentication_request(&token);
-
-    m_burn(token.access_token, strlen(token.access_token));
-    m_burn(token.refresh_token, strlen(token.refresh_token));
-
-    TRACE(("leave recv_msg_userauth_oauth2_config"))
-}
-
 void cli_auth_oauth2() {
     TRACE(("enter cli_auth_oauth2"))
-
-    send_oauth2_config_request();
+    
+    oauth2_config config = {
+            .version = 1,
+            .issuer = {
+                    .issuer = DROPBEAR_CLI_OAUTH2_ISSUER,
+                    .authorization_endpoint = DROPBEAR_CLI_OAUTH2_AUTHORIZATION_ENDPOINT,
+                    .token_endpoint = DROPBEAR_CLI_OAUTH2_TOKEN_ENDPOINT,
+                    .userinfo_endpoint = DROPBEAR_CLI_OAUTH2_USERINFO_ENDPOINT,
+                    .device_endpoint = DROPBEAR_CLI_OAUTH2_DEVICE_ENDPOINT,
+                    .supported_code_challenge_methods = DROPBEAR_CLI_OAUTH2_SUPPORTED_CODE_CHALLENGE_METHODS
+            },
+            .client = {
+                    .client_id = DROPBEAR_CLI_OAUTH2_CLIENT_ID,
+                    .client_secret = DROPBEAR_CLI_OAUTH2_CLIENT_SECRET,
+                    .redirect_uri_port = DROPBEAR_CLI_OAUTH2_REDIRECT_URI_PORT,
+                    .redirect_uri_path = DROPBEAR_CLI_OAUTH2_REDIRECT_URI_PATH
+            },
+            .required_scopes = DROPBEAR_CLI_OAUTH2_SCOPES_REQUIRED
+    };
+    
+    send_oauth2_authentication_request(&config);
 
     TRACE(("leave cli_auth_oauth2"))
 }

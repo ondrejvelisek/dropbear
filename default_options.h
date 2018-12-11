@@ -192,18 +192,24 @@ group1 in Dropbear server too */
 /* ~/.ssh/authorized_keys authentication */
 #define DROPBEAR_SVR_PUBKEY_AUTH 1
 
-/* if you enable OAuth2 auth all it will become only way to authenticate */
+/* enable OAuth2 authentication on server */
 #define DROPBEAR_SVR_OAUTH2_AUTH 0
-#define DROPBEAR_SVR_OAUTH2_ISSUER ""
-#define DROPBEAR_SVR_OAUTH2_AUTHORIZATION_ENDPOINT ""
-#define DROPBEAR_SVR_OAUTH2_TOKEN_ENDPOINT ""
-#define DROPBEAR_SVR_OAUTH2_USERINFO_ENDPOINT ""
-#define DROPBEAR_SVR_OAUTH2_SUPPORTED_CODE_CHALLENGE_METHODS "" // Space delimited
-#define DROPBEAR_SVR_OAUTH2_CLIENT_ID ""
-#define DROPBEAR_SVR_OAUTH2_CLIENT_SECRET "" // Not real secret for native app, pass empty string if not needed
-#define DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PORT 22080
-#define DROPBEAR_SVR_OAUTH2_REDIRECT_URI_PATH "/oauth2_callback"
-#define DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED "openid" // Space delimited
+#define DROPBEAR_SVR_OAUTH2_INTROSPECTION_ENDPOINT ""
+#define DROPBEAR_SVR_OAUTH2_RESOURCE_SERVER_ID ""
+#define DROPBEAR_SVR_OAUTH2_RESOURCE_SERVER_SECRET ""
+#define DROPBEAR_SVR_OAUTH2_SCOPES_REQUIRED "openid"
+/* enable OpenID Connect authentication on server */
+#define DROPBEAR_SVR_OIDC_AUTH 0
+#define DROPBEAR_SVR_OIDC_ISSUER ""
+#define DROPBEAR_SVR_OIDC_AUTHORIZATION_ENDPOINT ""
+#define DROPBEAR_SVR_OIDC_TOKEN_ENDPOINT ""
+#define DROPBEAR_SVR_OIDC_USERINFO_ENDPOINT ""
+#define DROPBEAR_SVR_OIDC_SUPPORTED_CODE_CHALLENGE_METHODS "" // Space delimited
+#define DROPBEAR_SVR_OIDC_CLIENT_ID ""
+#define DROPBEAR_SVR_OIDC_CLIENT_SECRET "" // Not real secret for native app, pass empty string if not needed
+#define DROPBEAR_SVR_OIDC_REDIRECT_URI_PORT 22080
+#define DROPBEAR_SVR_OIDC_REDIRECT_URI_PATH "/oauth2_callback"
+#define DROPBEAR_SVR_OIDC_SCOPES_REQUIRED "openid" // Space delimited
 
 /* Whether to take public key options in 
  * authorized_keys file into account */
@@ -213,8 +219,20 @@ group1 in Dropbear server too */
 #define DROPBEAR_CLI_PASSWORD_AUTH 1
 #define DROPBEAR_CLI_PUBKEY_AUTH 1
 
-/* if you enable OAuth2 auth all it will become only way to authenticate */
+/* enable OpenID Connect authentication on client */
+#define DROPBEAR_CLI_OIDC_AUTH 0
+/* enable OAuth2 authentication on client */
 #define DROPBEAR_CLI_OAUTH2_AUTH 0
+#define DROPBEAR_CLI_OAUTH2_ISSUER ""
+#define DROPBEAR_CLI_OAUTH2_AUTHORIZATION_ENDPOINT ""
+#define DROPBEAR_CLI_OAUTH2_TOKEN_ENDPOINT ""
+#define DROPBEAR_CLI_OAUTH2_USERINFO_ENDPOINT ""
+#define DROPBEAR_CLI_OAUTH2_SUPPORTED_CODE_CHALLENGE_METHODS "" // Space delimited
+#define DROPBEAR_CLI_OAUTH2_CLIENT_ID ""
+#define DROPBEAR_CLI_OAUTH2_CLIENT_SECRET "" // Not real secret for native public app, pass empty string if not needed
+#define DROPBEAR_CLI_OAUTH2_REDIRECT_URI_PORT 22080
+#define DROPBEAR_CLI_OAUTH2_REDIRECT_URI_PATH "/oauth2_callback"
+#define DROPBEAR_CLI_OAUTH2_SCOPES_REQUIRED "openid" // Space delimited
 
 /* A default argument for dbclient -i <privatekey>. 
 Homedir is prepended unless path begins with / */

@@ -41,6 +41,7 @@ void svr_auth_password(int valid_user);
 void svr_auth_pubkey(int valid_user);
 void svr_auth_pam(int valid_user);
 void svr_auth_oauth2(int valid_user);
+void svr_auth_oidc(int valid_user);
 
 #if DROPBEAR_SVR_PUBKEY_OPTIONS_BUILT
 int svr_pubkey_allows_agentfwd(void);
@@ -68,6 +69,7 @@ void recv_msg_userauth_specific_60(void);
 void recv_msg_userauth_pk_ok(void);
 void recv_msg_userauth_info_request(void);
 void recv_msg_userauth_oauth2_config(void);
+void recv_msg_userauth_oidc_config(void);
 void cli_get_user(void);
 void cli_auth_getmethods(void);
 int cli_auth_try(void);
@@ -75,6 +77,7 @@ void recv_msg_userauth_banner(void);
 void cli_pubkeyfail(void);
 void cli_auth_password(void);
 void cli_auth_oauth2(void);
+void cli_auth_oidc(void);
 int cli_auth_pubkey(void);
 void cli_auth_interactive(void);
 char* getpass_or_cancel(const char* prompt);
@@ -87,7 +90,8 @@ void cli_auth_pubkey_cleanup(void);
 #define AUTH_TYPE_PUBKEY    (1 << 1)
 #define AUTH_TYPE_PASSWORD  (1 << 2)
 #define AUTH_TYPE_INTERACT  (1 << 3)
-#define AUTH_TYPE_OAUTH2      (1 << 4)
+#define AUTH_TYPE_OAUTH2    (1 << 4)
+#define AUTH_TYPE_OIDC      (1 << 5)
 
 #define AUTH_METHOD_NONE "none"
 #define AUTH_METHOD_NONE_LEN 4
@@ -100,6 +104,8 @@ void cli_auth_pubkey_cleanup(void);
 
 #define AUTH_METHOD_OAUTH2 "oauth2"
 #define AUTH_METHOD_OAUTH2_LEN 6
+#define AUTH_METHOD_OIDC "oidc"
+#define AUTH_METHOD_OIDC_LEN 4
 
 
 /* This structure is shared between server and client - it contains
@@ -129,6 +135,9 @@ struct AuthState {
 	char *pw_passwd;
 #if DROPBEAR_SVR_PUBKEY_OPTIONS_BUILT
 	struct PubKeyOptions* pubkey_options;
+#endif
+#if DROPBEAR_SVR_OIDC_AUTH
+	char *code_verifier;
 #endif
 };
 

@@ -40,6 +40,12 @@ typedef struct oauth2_token_t {
     char scopes[10000];
 } oauth2_token;
 
+typedef struct oauth2_introspection_t {
+    char active;
+    char sub[10000];
+    char scope[1000];
+} oauth2_introspection;
+
 typedef struct oauth2_device_t {
     char device_code[1000];
     char user_code[100];

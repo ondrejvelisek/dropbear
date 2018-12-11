@@ -125,6 +125,7 @@ void recv_msg_userauth_banner() {
  * SSH_MSG_USERAUTH_PASSWD_CHANGEREQ,
  * SSH_MSG_USERAUTH_PK_OK, &
  * SSH_MSG_USERAUTH_OAUTH2_CONFIG, &
+ * SSH_MSG_USERAUTH_OIDC_CONFIG, &
  * SSH_MSG_USERAUTH_INFO_REQUEST. */
 void recv_msg_userauth_specific_60() {
 
@@ -135,9 +136,9 @@ void recv_msg_userauth_specific_60() {
 	}
 #endif
 
-#if DROPBEAR_CLI_OAUTH2_AUTH
-	if (cli_ses.lastauthtype == AUTH_TYPE_OAUTH2) {
-        recv_msg_userauth_oauth2_config();
+#if DROPBEAR_CLI_OIDC_AUTH
+	if (cli_ses.lastauthtype == AUTH_TYPE_OIDC) {
+        recv_msg_userauth_oidc_config();
         return;
     }
 #endif
@@ -307,6 +308,14 @@ int cli_auth_try() {
 		cli_auth_oauth2();
 		finished = 1;
 		cli_ses.lastauthtype = AUTH_TYPE_OAUTH2;
+	}
+#endif
+
+#if DROPBEAR_CLI_OIDC_AUTH
+	if (!finished) {
+		cli_auth_oidc();
+		finished = 1;
+		cli_ses.lastauthtype = AUTH_TYPE_OIDC;
 	}
 #endif
 

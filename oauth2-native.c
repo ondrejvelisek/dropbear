@@ -13,6 +13,33 @@
 
 #include "oauth2-native.h"
 
+int obtain_token_from_agent(oauth2_token* token, oauth2_config* config) {
+    TRACE(("obtain_token_from_agent enter"))
+
+    char code_verifier[16];
+    rand_string(code_verifier, 15);
+    char code_challenge[16];
+    strcpy(code_challenge, code_verifier);
+
+    char code[1000];
+    if (obtain_code_from_agent(code, code_challenge, config) < 0) {
+        TRACE(("Could not get authorization code from agent."))
+        return -1;
+    }
+    if (exchange_code_for_token(token, code, code_verifier, config) < 0) {
+        dropbear_log(LOG_ERR, "Could not exchange authorization code for access token");
+        return -1;
+    }
+    TRACE(("Token obtained with agent. Storing."))
+    if (store_token(token, config) < 0) {
+        dropbear_log(LOG_WARNING, "Unable to store token");
+    } else {
+        TRACE(("Token stored"))
+    }
+    TRACE(("Agent's access token response received"))
+    return 0;
+}
+
 int obtain_token_from_store(oauth2_token* token, oauth2_config* config) {
     TRACE(("obtain_token_from_store enter"))
     if (obtain_stored_token(token, config) < 0) {

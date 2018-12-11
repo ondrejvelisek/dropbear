@@ -11,12 +11,13 @@
 
 int parse_token_response(oauth2_token* token, json_value* response, char* error);
 
-void buf_put_oauth2_config(buffer* buffer, oauth2_config* config);
+void buf_put_oauth2_config(buffer* buffer, oauth2_config* config, char* code_challenge);
+void buf_get_oauth2_config(buffer* buffer, oauth2_config* config, char* code_challenge);
 
-void buf_get_oauth2_config(buffer* buffer, oauth2_config* config);
+void buf_put_oauth2_code(buffer* buffer, char* code);
+void buf_get_oauth2_code(buffer* buffer, char* code);
 
 void buf_put_oauth2_token(buffer* buffer, oauth2_token* token);
-
 void buf_get_oauth2_token(buffer* buffer, oauth2_token* token);
 
 #endif
