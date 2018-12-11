@@ -16,6 +16,14 @@ SERVING_REQUEST_COMPLETED = 0;
 SERVING_REQUEST_CONTINUING = 1;
 SERVING_REQUEST_CLOSE_BROWSER = 2;
 
+
+typedef struct inter_state_t {
+    void* exter_state;
+    char opened_in_new_window;
+    char* close_window_id;
+    int original_window_id;
+} inter_state;
+
 //////// UTILS
 
 int generate_window_id(char* str) {
@@ -100,19 +108,21 @@ int make_close_response(char* response, char* close_window_id) {
                   "  </body>"
                   "</html>\r\n",
             close_window_id,
-            "Authentication successfull. You can close this window and go back you "
-            "If not, please close it and return to application.",
+            "Authentication successfull. You can close this window and go back to the application",
             CLOSE_PATH);
     make_response(response, NULL, NULL, body);
     return 1;
 }
 
-int close_request_handler(char* response, char* close_window_id) {
+int close_request_handler(char* response, inter_state* state) {
     make_response(response, "204 No Content", NULL, NULL);
-    // TODO: not possible since it would close all tabs.
-//    if (close_browser(close_window_id) < 0) {
-//        dropbear_log(LOG_WARNING, "Error closing browser window. Need to close manually");
-//    }
+    if (state->opened_in_new_window) {
+        if (close_browser(state->close_window_id) < 0) {
+            dropbear_log(LOG_WARNING, "Error closing browser window. Need to close manually");
+        }
+    } else {
+        dropbear_log(LOG_WARNING, "Can't close window because it page was not opened in a tab");
+    }
     return 0;
 }
 
@@ -165,12 +175,22 @@ int focus_window(int window_id) {
     return execute(command);
 }
 
-int open_browser(char* url) {
+int open_browser(char* url, inter_state* inter_state) {
     TRACE(("Opening browser"))
-    // check for X-window
-    if (getenv("DISPLAY") == NULL) return -1;
 
     char command[10000];
+
+    sprintf(command, "x-www-browser --new-window \"%s\" > /dev/null 2>&1", url);
+    if (execute(command) == 0) {
+        inter_state->opened_in_new_window = 1;
+        return 0;
+    }
+
+    sprintf(command, "gnome-www-browser --new-window \"%s\" > /dev/null 2>&1", url);
+    if (execute(command) == 0) {
+        inter_state->opened_in_new_window = 1;
+        return 0;
+    }
 
     sprintf(command, "xdg-open \"%s\" > /dev/null 2>&1", url);
     if (execute(command) == 0) return 0;
@@ -222,12 +242,6 @@ int init_socket(int port_number) {
     return server_socket;
 }
 
-typedef struct inter_state_t {
-    void* exter_state;
-    char* close_window_id;
-    int original_window_id;
-} inter_state;
-
 int serve_connection(int connection, int(*request_handler)(char*, char*, void*), inter_state* inter_state) {
 
     int continue_listening = SERVING_REQUEST_CONTINUING;
@@ -242,7 +256,7 @@ int serve_connection(int connection, int(*request_handler)(char*, char*, void*),
 
     if (request_match(request, "GET", CLOSE_PATH)) {
         TRACE(("Handling close window response"))
-        if (close_request_handler(response, inter_state->close_window_id) < 0) {
+        if (close_request_handler(response, inter_state) < 0) {
             dropbear_log(LOG_ERR, "Handling close window response failed");
             return -1;
         }
@@ -296,15 +310,21 @@ int make_browser_request(char* request_url, int port, int(*request_handler)(char
 
     TRACE(("Server started"))
 
-    if (open_browser(request_url) != 0) {
+    char close_window_id[100];
+    inter_state inter_state = {
+            .exter_state = state,
+            .opened_in_new_window = 0,
+            .close_window_id = close_window_id,
+            .original_window_id = original_window_id
+    };
+
+    if (open_browser(request_url, &inter_state) != 0) {
         dropbear_log(LOG_ERR, "Opening browser failed");
         close(server_socket);
         return -1;
     }
     TRACE(("Browser opened"))
 
-    char close_window_id[100];
-    inter_state inter_state = { state, close_window_id, original_window_id };
     int continue_listening = 1;
     while(continue_listening) {
 
